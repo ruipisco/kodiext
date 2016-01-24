@@ -1,17 +1,43 @@
 <keymap>
+
 	<map context="KodiPlayerActions">
 		<key id="KEY_INFO" mapto="infoPressed" flags="m" />
 		<key id="KEY_MENU" mapto="menuPressed" flags="m" />
 		<key id="KEY_PREVIOUS" mapto="prevPressed" flags="m" />
 		<key id="KEY_NEXT" mapto = "nextPressed" flags="m" />
 	</map>
+
+	<map context="OkCancelActions">
+		<key id="KEY_STOP" mapto="cancel" flags="m" />
+		<key id="KEY_EXIT" mapto="cancel" flags="m" />
+		<key id="KEY_OK" mapto="ok" flags="m" />
+	</map>
+
 	<map context="InfobarSeekActions">
 		<key id="KEY_LEFT" mapto="seekBackManual" flags="m" />
 		<key id="KEY_RIGHT" mapto="seekFwdManual" flags="m" />
+
+		<key id="KEY_PLAYPAUSE" mapto="playpauseService" flags="m" />
+		<key id="KEY_PAUSE" mapto="pauseService" flags="m" />
+		<key id="KEY_PLAY" mapto="unPauseService" flags="m" />
+		<key id="KEY_REWIND" mapto="seekBack" flags="b" />
+		<key id="KEY_FASTFORWARD" mapto="seekFwd" flags="b" />
+		<key id="KEY_OK" mapto="okButton" flags="m" />
 	</map>
+
+	<map context="InfobarAudioSelectionActions">
+		<key id="KEY_YELLOW" mapto="audioSelection" flags="m" />
+		<key id="KEY_AUDIO" mapto="audioSelection" flags="m" />
+	</map>
+
+	<map context="InfobarSubtitleSelectionActions">
+		<key id="KEY_SUBTITLE" mapto="subtitleSelection" flags="m" />
+	</map>
+
 	<map context="InfoBarAspectChangeActions">
 		<key id="KEY_ZOOM" mapto="aspectChange" flags="m" />
 		<key id="KEY_5" mapto="aspectChange" flags="m" />
 	</map>
+
 </keymap>
 
