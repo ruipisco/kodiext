@@ -292,6 +292,10 @@ class KodiLauncher(Screen):
         try:
             os.system('cat /tmp/video_outpout > /proc/stb/video/videomode')
             os.system ('rm /tmp/video_outpout')
+            if os.path.exists('/media/hdd/.kodi/'):
+                os.system ('rm -rf /media/hdd/kodi_crashlog*.log')
+            else:
+                os.system ('rm -rf /tmp/kodi_crashlog*.log')
         except:
             pass
         self.close()
