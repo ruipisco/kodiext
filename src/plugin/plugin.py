@@ -254,7 +254,7 @@ class E2KodiExtServer(UDSServer):
         self.subtitles = []
 
 class KodiLauncher(Screen):
-    skin = """<screen position="fill" backgroundColor="#00000000" flags="wfNoBorder" title=" "></screen>"""
+    skin = """<screen position="fill" size="1280,720" backgroundColor="#00000000" flags="wfNoBorder" title=" "></screen>"""
 
     def __init__(self, session):
         Screen.__init__(self, session)
@@ -289,9 +289,19 @@ class KodiLauncher(Screen):
         self.serverThread.join()
         if self.previousService:
             self.session.nav.playService(self.previousService)
+        try:
+            os.system('cat /tmp/video_outpout > /proc/stb/video/videomode')
+            os.system ('rm /tmp/video_outpout')
+        except:
+            pass
         self.close()
 
 def startLauncher(session, **kwargs):
+    try:
+        os.system('cat /proc/stb/video/videomode > /tmp/video_outpout')
+        os.system ('echo "720p50" > /proc/stb/video/videomode')
+    except:
+        pass
     RCUnlock()
     session.open(KodiLauncher)
 
