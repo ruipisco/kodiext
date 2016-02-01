@@ -102,7 +102,7 @@ int main(int argc, char **argv)
   char *pid = NULL;
   int stop = 0;
   int tokodi = 0;
-  int toenigma2 = 0
+  int toenigma2 = 0;
   int c;
   opterr = 0;
 
