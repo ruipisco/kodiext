@@ -401,8 +401,6 @@ class KodiLauncher(Screen):
 
     def stop(self):
         FBUnlock()
-        self.server.shutdown()
-        self.serverThread.join()
         if self.previousService:
             self.session.nav.playService(self.previousService)
         try:
