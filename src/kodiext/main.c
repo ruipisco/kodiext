@@ -13,6 +13,7 @@
 
 #include "common.h"
 #include "packet.h"
+#include "dvbaudio.h"
 
 enum
 {
@@ -195,6 +196,7 @@ int main(int argc, char **argv)
       fprintf(stderr, "cannot switch to kodi!\n");
       return 2;
     }
+    audioSetBypassToRaw();
     sprintf(configcmd, "config -pid %s -visible on", pid);
     system(configcmd);
     return 0;
@@ -255,6 +257,7 @@ int main(int argc, char **argv)
     return 4;
   }
 
+  audioSetBypassToRaw();
   sprintf(configcmd, "config -pid %s -visible on", pid);
   system(configcmd);
   system("rm /tmp/playing.lock 2>/dev/null");
