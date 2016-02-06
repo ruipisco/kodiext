@@ -32,6 +32,7 @@
 
 	<map context="InfobarSubtitleSelectionActions">
 		<key id="KEY_SUBTITLE" mapto="subtitleSelection" flags="m" />
+		<key id="KEY_BLUE" mapto="subtitleSelection" flags="m" />
 	</map>
 
 	<map context="InfoBarAspectChangeActions">
