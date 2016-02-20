@@ -173,6 +173,10 @@ class KodiVideoPlayer(InfoBarBase, SubsSupportStatus, SubsSupport, InfoBarShowHi
     def audioSelection(self):
         self.session.openWithCallback(self.audioSelected, MyAudioSelection, infobar=self)
 
+    def subtitleSelection(self):
+        from Screens.AudioSelection import SubtitleSelection
+        self.session.open(SubtitleSelection, self)
+
     def showAspectChanged(self):
         self.statusScreen.setStatus(self.getAspectStr(), "#00ff00")
 
