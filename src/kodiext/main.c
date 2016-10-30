@@ -101,13 +101,14 @@ int main(int argc, char **argv)
   char *purl = NULL;
   char *surl = NULL;
   char *pid = NULL;
+  char *stype = "4097";
   int stop = 0;
   int tokodi = 0;
   int toenigma2 = 0;
   int c;
   opterr = 0;
 
-  while ((c = getopt (argc, argv, "U:P:S:TEK")) != -1)
+  while ((c = getopt (argc, argv, "U:P:S:X:TEK")) != -1)
     switch (c)
       {
       case 'U':
@@ -115,6 +116,9 @@ int main(int argc, char **argv)
         break;
       case 'S':
         surl = optarg;
+        break;
+      case 'X':
+        stype = optarg;
         break;
       case 'T':
         stop = 1;
@@ -129,7 +133,7 @@ int main(int argc, char **argv)
         pid = optarg;
         break;
       case '?':
-        if (optopt == 'U')
+        if (optopt == 'U' || optopt == 'P' || optopt == 'S' || optopt == 'X')
           fprintf (stderr, "Option -%c requires an argument.\n", optopt);
         else if (isprint (optopt))
           fprintf (stderr, "Unknown option `-%c'.\n", optopt);
@@ -144,11 +148,12 @@ int main(int argc, char **argv)
 
   if (!(stop || ((tokodi || toenigma2) && pid != NULL) || (purl != NULL && pid != NULL)))
   {
-    fprintf(stderr, "Usage: kodiext -U playurl -P ppid [-S subtitlesurl] [-T] [-E] [-K]\n");
+    fprintf(stderr, "Usage: kodiext -U playurl -P ppid [-S subtitlesurl] [-X servicetype] [-T] [-E] [-K]\n");
     return 1;
   }
 
-  fprintf(stderr, "playurl = %s, subtitlesurl = %s, stop = %d, toenigma2 = %d, tokodi = %d\n", purl, surl, stop, toenigma2, tokodi);
+  fprintf(stderr, "playurl = %s, subtitlesurl = %s, servicetype = %s, stop = %d, toenigma2 = %d, tokodi = %d\n", 
+          purl, surl, stype, stop, toenigma2, tokodi);
 
   struct packet_header ph;
   char configcmd[64];
@@ -206,8 +211,8 @@ int main(int argc, char **argv)
   ph.result = 0;
   if (surl != NULL)
   {
-    data = (char *) malloc((strlen(purl) + strlen(surl) + 2) * sizeof(char));
-    sprintf(data, "%s\n%s", purl, surl);
+    data = (char *) malloc((strlen(purl) + strlen(surl) + strlen(stype) + 3) * sizeof(char));
+    sprintf(data, "%s\n%s\n%s", purl, surl, stype);
   }
   else
     data = purl;
