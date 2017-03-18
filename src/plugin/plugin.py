@@ -401,7 +401,7 @@ class E2KodiExtServer(UDSServer):
         self.subtitles = []
 
 class KodiLauncher(Screen):
-    skin = """<screen position="fill" size="1280,720" backgroundColor="#00000000" flags="wfNoBorder" title=" "></screen>"""
+    skin = """<screen position="fill" size="1280,720" backgroundColor="#FF000000" flags="wfNoBorder" title=" "></screen>"""
 
     def __init__(self, session):
         Screen.__init__(self, session)
