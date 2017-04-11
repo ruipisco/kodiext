@@ -13,6 +13,7 @@ from Screens.InfoBarGenerics import InfoBarNotifications, InfoBarSeek, \
     InfoBarAudioSelection, InfoBarShowHide
 from Screens.MessageBox import MessageBox
 from Screens.Screen import Screen
+from Tools.Directories import fileExists
 from Tools import Notifications
 
 from e2utils import InfoBarAspectChange, WebPixmap, MyAudioSelection, \
@@ -22,7 +23,7 @@ from enigma import eServiceReference, eTimer, ePythonMessagePump, \
     iPlayableService, fbClass, eRCInput, getDesktop
 from server import KodiExtRequestHandler, UDSServer
 from Tools.BoundFunction import boundFunction
-
+from boxbranding import getMachineBrand
 try:
     from Plugins.Extensions.SubsSupport import SubsSupport, SubsSupportStatus
 except ImportError:
@@ -53,14 +54,32 @@ SERVER_THREAD = None
 
 _g_dw, _g_dh = 1280, 720
 def SaveDesktopInfo():
-        global _g_dw, _g_dh
-        try:
-                _g_dw = getDesktop(0).size().width()
-                _g_dh = getDesktop(0).size().height()
-        except: _g_dw,_g_dh = 1280,720
-        print "[XBMC] Desktop size [%dx%d]" % (_g_dw,_g_dh)
-        open("/tmp/dw.info", "w").write(str(_g_dw) + "x" + str(_g_dh))
+    global _g_dw, _g_dh
+    try:
+        _g_dw = getDesktop(0).size().width()
+        _g_dh = getDesktop(0).size().height()
+    except:
+        _g_dw,_g_dh = 1280,720
+    print "[XBMC] Desktop size [%dx%d]" % (_g_dw,_g_dh)
+    if not fileExists('/tmp/dw.info'):
+        os.system('touch /tmp/dw.info')
+    os.system('chmod 755 /tmp/dw.info')
+    open("/tmp/dw.info", "w").write(str(_g_dw) + "x" + str(_g_dh))
+
 SaveDesktopInfo()
+
+def esHD():
+    if getDesktop(0).size().width() > 1400:
+        return True
+    else:
+        return False
+
+def fhd(num, factor=1.5):
+    if esHD():
+        prod=num*factor
+    else:
+        prod=num
+    return int(round(prod))
 
 def FBLock():
     print"[KodiLauncher] FBLock"
@@ -87,7 +106,28 @@ def kodiResumeStopped(data, retval, extraArgs):
         KODI_LAUNCHER.stop()
 
 class KodiVideoPlayer(InfoBarBase, SubsSupportStatus, SubsSupport, InfoBarShowHide, InfoBarSeek, InfoBarSubservicesSupport, InfoBarAspectChange, InfoBarAudioSelection, InfoBarNotifications, HelpableScreen, Screen):
-    skin = """
+    if esHD():
+        skin = """
+        <screen title="custom service source" position="0, 750" size="1920,330" zPosition="1" backgroundColor="#55444444" flags="wfNoBorder">
+            <widget name="image" position="30,15" size="300,300" alphatest="on" transparent="1"/>
+            <widget source="session.CurrentService" render="Label" position="375,30" size="1845,82" zPosition="1"  font="Regular;24" valign="center" halign="left" transparent="1">
+              <convert type="ServiceName">Name</convert>
+            </widget>
+            <widget source="session.CurrentService" render="PositionGauge" position="375,135" size="1455,24" zPosition="4" transparent="1">
+                <convert type="ServicePosition">Gauge</convert>
+            </widget>
+            <widget source="session.CurrentService" render="Progress" position="375,135" size="1455,24" zPosition="3" transparent="1">
+                <convert type="ServicePosition">Position</convert>
+            </widget>
+            <widget source="session.CurrentService" render="Label" position="375,180" size="180,42" font="Regular;23" halign="left"   transparent="1">
+                <convert type="ServicePosition">Position,ShowHours</convert>
+            </widget>
+            <widget source="session.CurrentService" render="Label" position="1665,180" size="180,42" font="Regular;23" halign="left"   transparent="1">
+                <convert type="ServicePosition">Length,ShowHours</convert>
+            </widget>
+        </screen>"""
+    else:
+        skin = """
         <screen title="custom service source" position="0, 500" size="1280,220" zPosition="1" backgroundColor="#55444444" flags="wfNoBorder">
             <widget name="image" position="20,10" size="200,200" alphatest="on" transparent="1"/>
             <widget source="session.CurrentService" render="Label" position="250,20" size="1230,55" zPosition="1"  font="Regular;24" valign="center" halign="left" transparent="1">
@@ -196,6 +236,10 @@ class KodiVideoPlayer(InfoBarBase, SubsSupportStatus, SubsSupport, InfoBarShowHi
         self.session.nav.stopService()
 
     def playService(self, sref):
+        if os.path.exists("/proc/stb/video/policy2"):
+            f = open("/proc/stb/video/policy2", "w")
+            f.write("letterbox")
+            f.close()
         self.session.nav.playService(sref)
 
     def audioSelection(self):
@@ -401,7 +445,10 @@ class E2KodiExtServer(UDSServer):
         self.subtitles = []
 
 class KodiLauncher(Screen):
-    skin = """<screen position="fill" size="1280,720" backgroundColor="#FF000000" flags="wfNoBorder" title=" "></screen>"""
+    if esHD():
+        skin = """<screen position="fill" size="1920,1080" backgroundColor="#FF000000" flags="wfNoBorder" title=" "></screen>"""
+    else:
+        skin = """<screen position="fill" size="1280,720" backgroundColor="#FF000000" flags="wfNoBorder" title=" "></screen>"""
 
     def __init__(self, session):
         Screen.__init__(self, session)
@@ -449,6 +496,9 @@ class KodiLauncher(Screen):
         if self.previousService:
             self.session.nav.playService(self.previousService)
         try:
+            if getMachineBrand() in ('Vu+'):
+                os.system('cat /tmp/video_outpout > /proc/stb/video/videomode')
+                os.system ('rm /tmp/video_outpout')
             if os.path.exists('/media/hdd/.kodi/'):
                 os.system ('rm -rf /media/hdd/kodi_crashlog*.log')
             else:
@@ -474,6 +524,12 @@ def autoStart(reason, **kwargs):
         SERVER_THREAD.join()
 
 def startLauncher(session, **kwargs):
+    try:
+        if getMachineBrand() in ('Vu+'):
+            os.system('cat /proc/stb/video/videomode > /tmp/video_outpout')
+            os.system ('echo "720p50" > /proc/stb/video/videomode')
+    except:
+        pass
     RCUnlock()
     global SESSION
     SESSION = session
