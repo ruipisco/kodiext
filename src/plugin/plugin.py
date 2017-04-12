@@ -236,10 +236,6 @@ class KodiVideoPlayer(InfoBarBase, SubsSupportStatus, SubsSupport, InfoBarShowHi
         self.session.nav.stopService()
 
     def playService(self, sref):
-        if os.path.exists("/proc/stb/video/policy2"):
-            f = open("/proc/stb/video/policy2", "w")
-            f.write("letterbox")
-            f.close()
         self.session.nav.playService(sref)
 
     def audioSelection(self):
