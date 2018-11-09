@@ -1,16 +1,20 @@
+# -*- encoding: utf-8 -*-
 from Queue import Queue
 import json
 import os
 import threading
 
+from Components.ActionMap import ActionMap
+from Components.Label import Label
 from Components.ActionMap import HelpableActionMap
 from Components.Console import Console
 from Components.PluginComponent import PluginDescriptor
 from Components.ServiceEventTracker import InfoBarBase
 from Components.ServiceEventTracker import ServiceEventTracker
+from Components.Pixmap import Pixmap
 from Screens.HelpMenu import HelpableScreen
 from Screens.InfoBarGenerics import InfoBarNotifications, InfoBarSeek, \
-    InfoBarAudioSelection, InfoBarShowHide
+    InfoBarAudioSelection, InfoBarShowHide, InfoBarSubtitleSupport
 from Screens.MessageBox import MessageBox
 from Screens.Screen import Screen
 from Tools.Directories import fileExists
@@ -108,21 +112,26 @@ def kodiResumeStopped(data, retval, extraArgs):
 class KodiVideoPlayer(InfoBarBase, SubsSupportStatus, SubsSupport, InfoBarShowHide, InfoBarSeek, InfoBarSubservicesSupport, InfoBarAspectChange, InfoBarAudioSelection, InfoBarNotifications, HelpableScreen, Screen):
     if esHD():
         skin = """
-        <screen title="custom service source" position="0, 750" size="1920,330" zPosition="1" backgroundColor="#55444444" flags="wfNoBorder">
-            <widget name="image" position="30,15" size="300,300" alphatest="on" transparent="1"/>
-            <widget source="session.CurrentService" render="Label" position="375,30" size="1845,82" zPosition="1"  font="Regular;24" valign="center" halign="left" transparent="1">
+        <screen title="custom service source" position="0, 0" size="1921,1081" zPosition="1" flags="wfNoBorder" backgroundColor="transparent">
+	    <widget source="global.CurrentTime" render="Label" position="1700,34" size="150,67" font="RegularHD; 32" backgroundColor="#10000000" transparent="1" zPosition="3" halign="center">
+	      <convert type="ClockToText">Default</convert>
+	    </widget>
+	    <eLabel name="" position="0,15" size="1924,125" zPosition="-10"/>
+	    <eLabel position="0,856" zPosition="-11" size="1921,224" />
+            <widget name="image" position="30,780" size="300,300" alphatest="on" transparent="1"/>
+            <widget source="session.CurrentService" render="Label" position="65,44" size="1845,38" zPosition="1"  font="RegularHD;24" valign="center" halign="left" foregroundColor="#00ffa533" transparent="1">
               <convert type="ServiceName">Name</convert>
             </widget>
-            <widget source="session.CurrentService" render="PositionGauge" position="375,135" size="1455,24" zPosition="4" transparent="1">
-                <convert type="ServicePosition">Gauge</convert>
-            </widget>
-            <widget source="session.CurrentService" render="Progress" position="375,135" size="1455,24" zPosition="3" transparent="1">
-                <convert type="ServicePosition">Position</convert>
-            </widget>
-            <widget source="session.CurrentService" render="Label" position="375,180" size="180,42" font="Regular;23" halign="left"   transparent="1">
+	    <widget name="genre" position="65,86" size="1845,35" zPosition="2" font="RegularHD;19" valign="center" halign="left"/>
+	    <eLabel name="progressbar-back" position="343,900" size="1500,4" backgroundColor="#00cccccc" />
+	    <widget source="session.CurrentService" render="Progress" foregroundColor="#00007eff" backgroundColor="#00ffffff" position="343,897" size="1500,10" zPosition="7" transparent="0">
+    		<convert type="ServicePosition">Position</convert>
+  	    </widget>
+            <widget source="session.CurrentService" render="Label" position="750,935" size="180,67" zPosition="6" font="RegularHD;32" halign="left"   transparent="1">
                 <convert type="ServicePosition">Position,ShowHours</convert>
             </widget>
-            <widget source="session.CurrentService" render="Label" position="1665,180" size="180,42" font="Regular;23" halign="left"   transparent="1">
+	    <eLabel name="" text="/" position="927,935" size="20,67" zPosition="6" font="RegularHD;32"/> 
+            <widget source="session.CurrentService" render="Label" position="952,935" size="180,67" zPosition="6" font="RegularHD;32" halign="left"   transparent="1">
                 <convert type="ServicePosition">Length,ShowHours</convert>
             </widget>
         </screen>"""
@@ -151,7 +160,7 @@ class KodiVideoPlayer(InfoBarBase, SubsSupportStatus, SubsSupport, InfoBarShowHi
 
     def __init__(self, session, playlistCallback, nextItemCallback, prevItemCallback, infoCallback, menuCallback):
         Screen.__init__(self, session)
-        self.skinName = ['KodiVideoPlayer', 'MoviePlayer']
+        self.skinName = ['KodiVideoPlayer']
         statusScreen = self.session.instantiateDialog(StatusScreen)
         InfoBarBase.__init__(self, steal_current_service=True)
         SubsSupport.__init__(self, searchSupport=True, embeddedSupport=True)
@@ -176,7 +185,26 @@ class KodiVideoPlayer(InfoBarBase, SubsSupportStatus, SubsSupport, InfoBarShowHi
         self.__image = None
         self.__position = None
         self.__firstStart = True
-        self["image"] = WebPixmap(self.defaultImage, caching=False)
+	self["genre"] = Label()
+        # load meta info from json file provided by Kodi Enigma2Player
+        try:
+            meta = json.load(open(KODIEXTIN, "r"))
+        except Exception as e:
+            self.logger.error("failed to load meta from %s: %s", KODIEXTIN, str(e))
+            meta = {}
+	self.__image = Meta(meta).getImage()
+        self["image"] = WebPixmap(self.__image, caching=True)
+
+	self.genre = str(", ".join(Meta(meta).getGenre()))
+	self.plot = Meta(meta).getPlot()
+
+	self["genre"].setText(self.genre)
+
+#        if self.__image:
+#            self["image"].load(self.__image)
+#        else:
+#            self["image"].load(self.defaultImage)
+
         self["directionActions"] = HelpableActionMap(self, "DirectionActions",
         {
             "downUp": (playlistCallback, _("Show playlist")),
@@ -205,10 +233,6 @@ class KodiVideoPlayer(InfoBarBase, SubsSupportStatus, SubsSupport, InfoBarShowHi
         self.onClose.append(self.__timer.stop)
 
     def __evStart(self):
-        if self.__image:
-            self["image"].load(self.__image)
-        else:
-            self["image"].load(self.defaultImage)
         if self.__position and self.__firstStart:
             self.__firstStart = False
             Notifications.AddNotificationWithID(self.RESUME_POPUP_ID,
@@ -283,6 +307,17 @@ class Meta(object):
                     title+= u" (" + str(year) + u")"
         if not title:
             title = self.meta.get("title")
+	filename = self.getFilename()
+	if not title and fileExists(str(filename) + ".spztxt"):
+		f=open(str(filename) + ".spztxt","r")
+		tok=0
+		for line in f.readlines():
+			idx=line.find("->")
+			if idx != -1:
+				if tok==0:
+					title=u''+line[idx+3:]
+					break
+		f.close()
         if not title:
             listItem = self.meta.get("listItem")
             if listItem:
@@ -295,6 +330,113 @@ class Meta(object):
         if playerOptions:
             startTime = playerOptions.get("startTime", 0)
         return startTime
+
+    def getImage(self):
+	image = None
+	listItem = self.meta.get("listItem")
+        if listItem:
+		image = listItem.get("CacheThumb","")
+		fanart = listItem.get("Fanart","")
+		imageweb = ""
+		if fanart:
+			imageweb = fanart.get("thumb","")
+
+		if imageweb.startswith("http"):
+			if not fileExists(image):
+				image = imageweb
+		else:
+			filename = self.getFilename()
+			if fileExists(str(filename) + ".png"):
+				image = str(filename) + ".png"
+			elif fileExists(str(filename) + ".gif"):
+				image = str(filename) + ".gif"
+			elif fileExists(str(filename) + ".jpg"):
+				image = str(filename) + ".jpg"
+	return image
+
+    def getFilename(self):
+	return self.meta.get("strPath")
+
+    def getPlot(self):
+	plot = u''
+        vTag = self.meta.get('videoInfoTag')
+        if vTag and vTag.get("plot"):
+		plot = u'' + vTag.get("plot")	
+
+	filename = self.getFilename()
+	if not plot and fileExists(str(filename) + ".spztxt"):
+		f=open(str(filename) + ".spztxt","r")
+		tok=0
+		for line in f.readlines():
+			idx=line.find("->")
+			if idx != -1:
+				if tok==0:
+					tok=1
+				elif tok==1:
+					plot=u''+line[idx+3:]
+					break
+		f.close()
+		open("/tmp/prueba","w").write(plot)
+
+	return plot
+
+    def getGenre(self):
+	genre = []
+        vTag = self.meta.get('videoInfoTag')
+        if vTag and vTag.get("genre"):
+		genre = vTag.get("genre")
+
+	filename = self.getFilename()
+	if not genre and fileExists(str(filename) + ".spztxt"):
+		f=open(str(filename) + ".spztxt","r")
+		for line in f.readlines():
+			if line.split(":")[0]=='Género':
+				genrestr=u''+line.split(":")[1][1:]
+				genre = genrestr.split(" | ")
+				break
+		f.close()
+
+	return genre
+
+class VideoInfoView(Screen):
+	skin = """
+		<screen position="center,center" size="1150,600" title="View Video Info" >
+                   <widget name="image" position="15,150" size="300,400" alphatest="on" transparent="1"/>
+                   <widget source="session.CurrentService" render="Label" position="20,20" size="1110,42" zPosition="1"  font="RegularHD;26" valign="center" halign="left" foregroundColor="#00ffa533" transparent="1">
+                       <convert type="ServiceName">Name</convert>
+                   </widget>
+	           <widget name="genre" position="20,70" size="1110,35" zPosition="2" font="RegularHD;19" valign="center" halign="left"/>
+                   <eLabel name="linea" position="20,110" size="1110,2" foregroundColor="#40444444" transparent="0" zPosition="20" backgroundColor="#30555555"/>
+		   <widget source="description" position="330,150" size="800,400" font="RegularHD; 20" render="RunningTextSpa" options="movetype=swimming,startpoint=0,direction=top,steptime=100,repeat=0,always=0,oneshot=0,startdelay=15000,pause=500,backtime=5" noWrap="0"/>
+		</screen>"""
+	
+	def __init__(self, session):
+		self.skin = VideoInfoView.skin
+		Screen.__init__(self, session)
+		
+		self["genre"] = Label()
+		self["description"]=Label()
+	        # load meta info from json file provided by Kodi Enigma2Player
+	        try:
+	            meta = json.load(open(KODIEXTIN, "r"))
+	        except Exception as e:
+	            self.logger.error("failed to load meta from %s: %s", KODIEXTIN, str(e))
+	            meta = {}
+		self.__image = Meta(meta).getImage()
+	        self["image"] = WebPixmap(self.__image, caching=True)
+
+		self.genre = str(", ".join(Meta(meta).getGenre()))
+		self.plot = str(Meta(meta).getPlot())
+
+		self["genre"].setText(self.genre)
+		self["description"].setText(self.plot)
+
+		self["actions"] = ActionMap(["OkCancelActions"],
+		{
+			"cancel": self.close,
+			"ok": self.close
+		}, -1)
+		
 
 class E2KodiExtRequestHandler(KodiExtRequestHandler):
 
@@ -412,7 +554,7 @@ class E2KodiExtServer(UDSServer):
         # create Kodi player Screen
         noneFnc = lambda:None
         self.kodiPlayer = SESSION.openWithCallback(self.kodiPlayerExitCB, KodiVideoPlayer,
-            noneFnc, noneFnc, noneFnc, noneFnc, noneFnc)
+            noneFnc, noneFnc, noneFnc, self.infoview, noneFnc)
 
         # load subtitles
         if len(subtitles) > 0 and hasattr(self.kodiPlayer, "loadSubs"):
@@ -439,6 +581,9 @@ class E2KodiExtServer(UDSServer):
         SESSION.nav.stopService()
         self.kodiPlayer = None
         self.subtitles = []
+
+    def infoview(self):
+        SESSION.open(VideoInfoView)
 
 class KodiLauncher(Screen):
     if esHD():
