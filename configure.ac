@@ -1,4 +1,4 @@
-AC_INIT([enigma2-plugin-extensions-kodi], [0.1], [mx3ldev@gmail.com])
+AC_INIT([enigma2-plugin-extensions-kodi], [1.0], [openspateam@gmail.com])
 
 AM_INIT_AUTOMAKE
 AC_PROG_CC
