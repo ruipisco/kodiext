@@ -1,4 +1,4 @@
-installdir = $(datadir)/enigma2/python/Plugins/Extensions/Kodi/image
+installdir = $(libdir)/enigma2/python/Plugins/Extensions/Kodi/image
 
 dist_install_DATA = audio.png /
 audiosd.png /
