@@ -1,3 +1,3 @@
 installdir = $(libdir)/enigma2/python/Plugins/Extensions/Kodi/image
 
-dist_install_DATA = audio.png audiosd.png info.png infosd.png subtitle.png subtitlesd.png timeslip.png timeslipsd.png
+dist_install_DATA = audio.png info.png subtitle.png timeslip.png 4k-uhd-ico.png hd-ico.png sd-ico.png

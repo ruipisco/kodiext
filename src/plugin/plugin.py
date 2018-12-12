@@ -108,8 +108,9 @@ def kodiResumeStopped(data, retval, extraArgs):
     print '[KodiLauncher] kodi resume script stopped: retval = %d' % retval
     if retval > 0:
         KODI_LAUNCHER.stop()
+#        <eLabel name="" position="1400,1020" size="445,45" text=" " font="RegularHD; 20"  backgroundColor="#001E1C1C"/>
 
-class KodiVideoPlayer(InfoBarBase, SubsSupportStatus, SubsSupport, InfoBarShowHide, InfoBarSeek, InfoBarSubservicesSupport, InfoBarAspectChange, InfoBarAudioSelection, InfoBarNotifications, HelpableScreen, Screen):
+class KodiVideoPlayer(InfoBarBase, InfoBarShowHide, SubsSupportStatus, SubsSupport, InfoBarSeek, InfoBarSubservicesSupport, InfoBarAspectChange, InfoBarAudioSelection, InfoBarNotifications, HelpableScreen, Screen):
     if esHD():
         skin = """
         <screen title="custom service source" position="0, 0" size="1921,1081" zPosition="1" flags="wfNoBorder" backgroundColor="transparent">
@@ -134,14 +135,43 @@ class KodiVideoPlayer(InfoBarBase, SubsSupportStatus, SubsSupport, InfoBarShowHi
             <widget source="session.CurrentService" render="Label" position="952,935" size="180,67" zPosition="6" font="RegularHD;32" halign="left"   transparent="1">
                 <convert type="ServicePosition">Length,ShowHours</convert>
             </widget>
-	    <ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/Kodi/image/audio.png" position="370,1015" size="40,40" alphatest="blend" />
-		<ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/Kodi/image/subtitle.png" position="719,1015" size="40,40" alphatest="blend" />
-		<ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/Kodi/image/info.png" position="1081,1015" size="40,40" alphatest="blend" />
-		<ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/Kodi/image/timeslip.png" position="1419,1015" size="80,40" alphatest="blend" /><eLabel name="" position="417,1014" size="270,45" transparent="1" text="Audio" font="RegularHD; 20" />
-        <eLabel name="" position="768,1013" size="270,45" transparent="1" text="Subtitles" font="RegularHD; 20" />
-        <eLabel name="" position="1510,1013" size="270,45" transparent="1" text="TimeSleep" font="RegularHD; 20" />
-        <eLabel name="" position="1134,1014" size="233,45" transparent="1" text="Info" font="RegularHD; 20" />
-		</screen>"""
+	    <ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/Kodi/image/audio.png" position="1343,942" size="40,40" scale="1" alphatest="blend" />
+		<ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/Kodi/image/subtitle.png" position="1343,1007" size="40,40" scale="1" alphatest="blend" />
+		<ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/Kodi/image/info.png" position="740,1020" size="40,40" scale="1" alphatest="blend" />
+		<ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/Kodi/image/timeslip.png" position="925,1020" size="40,40" scale="1" alphatest="blend" />
+	<eLabel name="" position="1130,940" size="200,45" transparent="1" text="Audio" halign="right" font="RegularHD; 20" />
+        <eLabel name="" position="1130,1005" size="200,45" transparent="1" text="Subtitle" halign="right" font="RegularHD; 20" />
+        <eLabel name="" position="790,1022" size="270,45" transparent="1" text="Info" font="RegularHD; 20" />
+        <eLabel name="" position="975,1022" size="233,45" transparent="1" text="TimeSleep" font="RegularHD; 20" />
+	<widget source="session.CurrentService" render="Label" position="1400,940" size="445,45" font="RegularHD; 20" backgroundColor="#001A1A1A">
+		<convert type="TrackInfo">Audio</convert>
+	</widget>
+	<widget source="session.CurrentService" render="Label" position="1400,1005" size="445,45" font="RegularHD; 20" backgroundColor="#001E1C1C">
+		<convert type="TrackInfo">Subtitle</convert>
+	</widget>
+ 	<widget source="session.CurrentService" render="Label" position="345,1013" size="90,30" font="RegularHD; 16" halign="right" valign="center" transparent="1">
+    		<convert type="ServiceInfo">VideoWidth</convert>
+  	</widget>
+  	<eLabel text="x" position="435,1013" size="24,30" font="RegularHD; 16" halign="center" valign="center" transparent="1" />
+  	<widget source="session.CurrentService" render="Label" position="462,1013" size="90,30" font="RegularHD; 16" halign="left" valign="center" transparent="1">
+    		<convert type="ServiceInfo">VideoHeight</convert>
+  	</widget>
+	<widget pixmap="/usr/lib/enigma2/python/Plugins/Extensions/Kodi/image/sd-ico.png" position="400,952" render="Pixmap" size="80,60" source="session.CurrentService" zPosition="60" alphatest="blend" scale="1">
+    		<convert type="ServiceInfo">VideoWidth</convert>
+    		<convert type="ValueRange">0,720</convert>
+    		<convert type="ConditionalShowHide" />
+  	</widget>
+	<widget pixmap="/usr/lib/enigma2/python/Plugins/Extensions/Kodi/image/hd-ico.png" position="400,952" render="Pixmap" size="80,60" source="session.CurrentService" zPosition="60" alphatest="blend" scale="1">
+    		<convert type="ServiceInfo">VideoWidth</convert>
+    		<convert type="ValueRange">721,1980</convert>
+    		<convert type="ConditionalShowHide" />
+  	</widget>
+  	<widget pixmap="/usr/lib/enigma2/python/Plugins/Extensions/Kodi/image/4k-uhd-ico.png" position="400,952" render="Pixmap" size="80,60" source="session.CurrentService" zPosition="60" alphatest="blend" scale="1">
+    		<convert type="ServiceInfo">VideoWidth</convert>
+    		<convert type="ValueRange">1921,4096</convert>
+    		<convert type="ConditionalShowHide" />
+	</widget>
+	</screen>"""
     else:
         skin = """
         <screen title="custom service source" position="0, 0" size="1280,720" zPosition="1" flags="wfNoBorder" backgroundColor="transparent">
@@ -166,16 +196,46 @@ class KodiVideoPlayer(InfoBarBase, SubsSupportStatus, SubsSupport, InfoBarShowHi
             <widget source="session.CurrentService" render="Label" position="634,623" size="120,44" zPosition="6" font="Regular;32" halign="left"   transparent="1">
                 <convert type="ServicePosition">Length,ShowHours</convert>
             </widget>
-	    <ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/Kodi/image/audiosd.png" position="246,676" size="26,26" alphatest="blend" />
-		<ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/Kodi/image/subtitlesd.png" position="479,676" size="26,26" alphatest="blend" />
-		<ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/Kodi/image/infosd.png" position="720,676" size="26,26" alphatest="blend" />
-		<ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/Kodi/image/timeslipsd.png" position="946,676" size="53,26" alphatest="blend" /><eLabel name="" position="278,676" size="180,30" transparent="1" text="Audio" font="Regular; 20" />
-        <eLabel name="" position="512,675" size="180,30" transparent="1" text="Subtitles" font="Regular; 20" />
-        <eLabel name="" position="1006,675" size="180,30" transparent="1" text="TimeSleep" font="Regular; 20" />
-        <eLabel name="" position="756,676" size="155,30" transparent="1" text="Info" font="Regular; 20" />
+	    <ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/Kodi/image/audio.png" position="895,628" size="27,27" scale="1" alphatest="blend" />
+		<ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/Kodi/image/subtitle.png" position="895,671" size="27,27" scale="1" alphatest="blend" />
+		<ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/Kodi/image/info.png" position="493,680" size="27,27" scale="1" alphatest="blend" />
+		<ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/Kodi/image/timeslip.png" position="617,680" size="27,27" scale="1" alphatest="blend" />
+	<eLabel name="" position="753,627" size="133,30" transparent="1" text="Audio" halign="right" font="Regular; 20" />
+        <eLabel name="" position="753,670" size="133,30" transparent="1" text="Subtitle" halign="right" font="Regular; 20" />
+        <eLabel name="" position="527,681" size="180,30" transparent="1" text="Info" font="Regular; 20" />
+        <eLabel name="" position="650,681" size="155,30" transparent="1" text="TimeSleep" font="Regular; 20" />
+	<widget source="session.CurrentService" render="Label" position="933,627" size="297,30" font="Regular; 20" backgroundColor="#001A1A1A">
+		<convert type="TrackInfo">Audio</convert>
+	</widget>
+	<widget source="session.CurrentService" render="Label" position="933,670" size="297,30" font="Regular; 20" backgroundColor="#001E1C1C">
+		<convert type="TrackInfo">Subtitle</convert>
+	</widget>
+ 	<widget source="session.CurrentService" render="Label" position="230,675" size="60,20" font="Regular; 16" halign="right" valign="center" transparent="1">
+    		<convert type="ServiceInfo">VideoWidth</convert>
+  	</widget>
+  	<eLabel text="x" position="290,675" size="16,20" font="Regular; 16" halign="center" valign="center" transparent="1" />
+  	<widget source="session.CurrentService" render="Label" position="310,675" size="60,20" font="Regular; 16" halign="left" valign="center" transparent="1">
+    		<convert type="ServiceInfo">VideoHeight</convert>
+  	</widget>
+	<widget pixmap="/usr/lib/enigma2/python/Plugins/Extensions/Kodi/image/sd-ico.png" position="267,635" render="Pixmap" size="53,40" source="session.CurrentService" zPosition="60" alphatest="blend" scale="1">
+    		<convert type="ServiceInfo">VideoWidth</convert>
+    		<convert type="ValueRange">0,720</convert>
+    		<convert type="ConditionalShowHide" />
+  	</widget>
+	<widget pixmap="/usr/lib/enigma2/python/Plugins/Extensions/Kodi/image/hd-ico.png" position="267,635" render="Pixmap" size="53,40" source="session.CurrentService" zPosition="60" alphatest="blend" scale="1">
+    		<convert type="ServiceInfo">VideoWidth</convert>
+    		<convert type="ValueRange">721,1980</convert>
+    		<convert type="ConditionalShowHide" />
+  	</widget>
+  	<widget pixmap="/usr/lib/enigma2/python/Plugins/Extensions/Kodi/image/4k-uhd-ico.png" position="267,635" render="Pixmap" size="53,40" source="session.CurrentService" zPosition="60" alphatest="blend" scale="1">
+    		<convert type="ServiceInfo">VideoWidth</convert>
+    		<convert type="ValueRange">1921,4096</convert>
+    		<convert type="ConditionalShowHide" />
+	</widget>
 		</screen>"""
 
     RESUME_POPUP_ID = "kodiplayer_seekto"
+    instance = None
 
     def __init__(self, session, playlistCallback, nextItemCallback, prevItemCallback, infoCallback, menuCallback):
         Screen.__init__(self, session)
@@ -247,6 +307,11 @@ class KodiVideoPlayer(InfoBarBase, SubsSupportStatus, SubsSupport, InfoBarShowHi
         {
             iPlayableService.evStart : self.__evStart,
         })
+
+	assert KodiVideoPlayer.instance is None, "class KodiVideoPlayer is a singleton class and just one instance of this class is allowed!"
+	KodiVideoPlayer.instance = self
+
+
         self.onClose.append(boundFunction(self.session.deleteDialog, self.statusScreen))
         self.onClose.append(boundFunction(Notifications.RemovePopup, self.RESUME_POPUP_ID))
         self.onClose.append(self.__timer.stop)
@@ -395,7 +460,6 @@ class Meta(object):
 					plot=u''+line[idx+3:]
 					break
 		f.close()
-		open("/tmp/prueba","w").write(plot)
 
 	return plot
 

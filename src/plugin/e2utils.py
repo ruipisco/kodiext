@@ -312,8 +312,8 @@ class MyAudioSelection(AudioSelection):
             AudioSelection.__init__(self, session)
         self.skinName = 'AudioSelection'
 
-    def getSubtitleList(self):
-        return []
+#    def getSubtitleList(self):
+#        return []
 
 
 class StatusScreen(Screen):
