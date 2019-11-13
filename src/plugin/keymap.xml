@@ -5,6 +5,8 @@
 		<key id="KEY_MENU" mapto="menuPressed" flags="m" />
 		<key id="KEY_PREVIOUS" mapto="prevPressed" flags="m" />
 		<key id="KEY_NEXT" mapto = "nextPressed" flags="m" />
+		<key id="KEY_LEFT" mapto="seekBackManual" flags="m" />
+		<key id="KEY_RIGHT" mapto="seekFwdManual" flags="m" />
 	</map>
 
 	<map context="OkCancelActions">
@@ -14,9 +16,6 @@
 	</map>
 
 	<map context="InfobarSeekActions">
-		<key id="KEY_LEFT" mapto="seekBackManual" flags="m" />
-		<key id="KEY_RIGHT" mapto="seekFwdManual" flags="m" />
-
 		<key id="KEY_PLAYPAUSE" mapto="playpauseService" flags="m" />
 		<key id="KEY_PAUSE" mapto="pauseService" flags="m" />
 		<key id="KEY_PLAY" mapto="unPauseService" flags="m" />

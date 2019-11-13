@@ -265,6 +265,7 @@ class KodiVideoPlayer(InfoBarBase, InfoBarShowHide, SubsSupportStatus, SubsSuppo
         self.__position = None
         self.__firstStart = True
 	self["genre"] = Label()
+
         # load meta info from json file provided by Kodi Enigma2Player
         try:
             meta = json.load(open(KODIEXTIN, "r"))
@@ -279,16 +280,17 @@ class KodiVideoPlayer(InfoBarBase, InfoBarShowHide, SubsSupportStatus, SubsSuppo
 
 	self["genre"].setText(self.genre)
 
-#        if self.__image:
-#            self["image"].load(self.__image)
-#        else:
-#            self["image"].load(self.defaultImage)
+        # set title, image if provided
+        self.title_ref = Meta(meta).getTitle()
+
+        # set start position if provided
+        self.setStartPosition(Meta(meta).getStartTime())
 
         self["directionActions"] = HelpableActionMap(self, "DirectionActions",
         {
             "downUp": (playlistCallback, _("Show playlist")),
-            "upUp": (playlistCallback, _("Show playlist")),
-         })
+            "upUp": (playlistCallback, _("Show playlist"))
+        })
 
         self["okCancelActions"] = HelpableActionMap(self, "OkCancelActions",
         {
@@ -300,7 +302,9 @@ class KodiVideoPlayer(InfoBarBase, InfoBarShowHide, SubsSupportStatus, SubsSuppo
             "menuPressed": (menuCallback, _("Show playback menu")),
             "infoPressed": (infoCallback, _("Show playback info")),
             "nextPressed": (nextItemCallback, _("Skip to next item in playlist")),
-            "prevPressed": (prevItemCallback, _("Skip to previous item in playlist"))
+            "prevPressed": (prevItemCallback, _("Skip to previous item in playlist")),
+	    "seekFwdManual": self.keyr,
+	    "seekBackManual": self.keyl
         })
 
         self.eventTracker = ServiceEventTracker(self,
@@ -316,6 +320,25 @@ class KodiVideoPlayer(InfoBarBase, InfoBarShowHide, SubsSupportStatus, SubsSuppo
         self.onClose.append(boundFunction(Notifications.RemovePopup, self.RESUME_POPUP_ID))
         self.onClose.append(self.__timer.stop)
 
+    def keyr(self):
+	try:
+		if fileExists("/usr/lib/enigma2/python/Plugins/Extensions/TimeSleep/plugin.pyo") or fileExists("/usr/lib/enigma2/python/Plugins/Extensions/TimeSleep/plugin.so"):
+			from Plugins.Extensions.TimeSleep.plugin import timesleep
+			timesleep(self, True)
+		else:
+			InfoBarSeek.seekFwdManual(self)
+	except:
+		InfoBarSeek.seekFwdManual(self)
+
+    def keyl(self):
+	try:
+		if fileExists("/usr/lib/enigma2/python/Plugins/Extensions/TimeSleep/plugin.pyo") or fileExists("/usr/lib/enigma2/python/Plugins/Extensions/TimeSleep/plugin.so"):
+			from Plugins.Extensions.TimeSleep.plugin import timesleep
+			timesleep(self, False)
+		else:
+			InfoBarSeek.seekBackManual(self)
+	except:
+		InfoBarSeek.seekBackManual(self)
     def __evStart(self):
         if self.__position and self.__firstStart:
             self.__firstStart = False
@@ -344,6 +367,9 @@ class KodiVideoPlayer(InfoBarBase, InfoBarShowHide, SubsSupportStatus, SubsSuppo
         self.session.nav.stopService()
 
     def playService(self, sref):
+	if self.title_ref:
+        	sref.setName(self.title_ref.encode('utf-8'))
+
         self.session.nav.playService(sref)
 
     def audioSelection(self):
@@ -667,7 +693,7 @@ class E2KodiExtServer(UDSServer):
         sref.setName(title.encode('utf-8'))
 
         # set start position if provided
-        self.kodiPlayer.setStartPosition(Meta(meta).getStartTime())
+        #self.kodiPlayer.setStartPosition(Meta(meta).getStartTime())
 
         self.kodiPlayer.playService(sref)
         self.messageIn.put((True, None))
