@@ -24,7 +24,8 @@ from e2utils import InfoBarAspectChange, WebPixmap, MyAudioSelection, \
     StatusScreen, getPlayPositionInSeconds, getDurationInSeconds, \
     InfoBarSubservicesSupport
 from enigma import eServiceReference, eTimer, ePythonMessagePump, \
-    iPlayableService, fbClass, eRCInput, getDesktop
+    iPlayableService, fbClass, eRCInput, getDesktop, eDVBVolumecontrol
+from Components.SystemInfo import SystemInfo
 from server import KodiExtRequestHandler, UDSServer
 from Tools.BoundFunction import boundFunction
 from boxbranding import getMachineBrand
@@ -57,6 +58,92 @@ SERVER = None
 SERVER_THREAD = None
 
 _g_dw, _g_dh = 1280, 720
+
+
+class SetAudio:
+    def __init__(self):
+        self.VolPrev = 0
+        self.VolPlayer = 0
+        self.volctrl = eDVBVolumecontrol.getInstance()
+        self.ac3 = "downmix"
+        self.dts = "downmix"
+        self.aac = "downmix"
+        self.aacplus = "downmix"
+
+    def switch(self,Tokodi=False, Player=False):
+        if Tokodi:
+            if Player:
+                self.VolPlayer = self.volctrl.getVolume()
+            vol =100
+            ac3="downmix"
+            dts="downmix"
+            aac="downmix"
+            aacplus="downmix"
+        else:
+            if Player:
+                vol = self.VolPlayer
+            else:
+                vol = self.VolPrev
+            ac3=self.ac3
+            dts=self.dts
+            aac=self.aac
+            aacplus=self.aacplus
+
+        self.volctrl.setVolume(vol, vol)
+
+        if SystemInfo["CanDownmixAC3"]:
+            try:
+                open("/proc/stb/audio/ac3", "w").write(ac3)
+            except:
+                pass
+
+        if SystemInfo["CanDownmixDTS"]:
+            try:
+                open("/proc/stb/audio/dts", "w").write(dts)
+            except:
+                pass
+
+        if SystemInfo["CanDownmixAAC"]:
+            try:
+                open("/proc/stb/audio/aac", "w").write(aac)
+            except:
+                pass
+
+        if SystemInfo["CanDownmixAACPlus"]:
+            try:
+                open("/proc/stb/audio/aacplus", "w").write(aacplus)
+            except:
+                pass
+
+    def ReadData(self):
+        self.VolPrev = self.volctrl.getVolume()
+        self.VolPlayer = self.VolPrev
+        if SystemInfo["CanDownmixAC3"]:
+            try:
+                self.ac3 = open("/proc/stb/audio/ac3", "r").read()
+            except:
+                pass
+
+        if SystemInfo["CanDownmixDTS"]:
+            try:
+                self.dts = open("/proc/stb/audio/dts", "r").read()
+            except:
+                pass
+
+        if SystemInfo["CanDownmixAAC"]:
+            try:
+                self.aac = open("/proc/stb/audio/aac", "r").read()
+            except:
+                pass
+
+        if SystemInfo["CanDownmixAACPlus"]:
+            try:
+                self.aacplus = open("/proc/stb/audio/aacplus", "r").read()
+            except:
+                pass
+
+setaudio = SetAudio()
+
 def SaveDesktopInfo():
     global _g_dw, _g_dh
     try:
@@ -630,6 +717,7 @@ class E2KodiExtServer(UDSServer):
         self.messageIn.put((True, None))
 
     def handlePlayMessage(self, status, data):
+        setaudio.switch(False,True)
         if data is None:
             self.logger.error("handlePlayMessage: no data!")
             self.messageIn.put((False, None))
@@ -699,6 +787,7 @@ class E2KodiExtServer(UDSServer):
         self.messageIn.put((True, None))
 
     def kodiPlayerExitCB(self, callback=None):
+        setaudio.switch(True,True)
         SESSION.nav.stopService()
         self.kodiPlayer = None
         self.subtitles = []
@@ -746,6 +835,8 @@ class KodiLauncher(Screen):
         self._checkConsole.ePopen("ps | grep kodi.bin | grep -v grep", psCallback)
 
     def startKodi(self):
+        setaudio.ReadData()
+        setaudio.switch(True)
         self._startConsole = Console()
         self._startConsole.ePopen(KODIRUN_SCRIPT, kodiStopped)
 
@@ -754,6 +845,7 @@ class KodiLauncher(Screen):
         self._resumeConsole.ePopen(KODIRESUME_SCRIPT % pid, kodiResumeStopped)
 
     def stop(self):
+        setaudio.switch()
         FBUnlock()
         if self.previousService:
             self.session.nav.playService(self.previousService)
