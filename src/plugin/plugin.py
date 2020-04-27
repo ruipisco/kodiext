@@ -142,7 +142,25 @@ class SetAudio:
             except:
                 pass
 
+class SetResolution:
+    def __init__(self):
+        self.E2res = None
+        self.kodires = None
+
+    def switch(self,Tokodi=False, Player=False):
+        if Tokodi:
+            if self.kodires and Player:
+                open("/proc/stb/video/videomode","w").write(self.kodires)
+        else:
+            if Player:
+                self.kodires = open("/proc/stb/video/videomode","r").read()        
+            open("/proc/stb/video/videomode","w").write(self.E2res)
+
+    def ReadData(self):
+        self.E2res = open("/proc/stb/video/videomode","r").read()        
+ 
 setaudio = SetAudio()
+setresolution = SetResolution()
 
 def SaveDesktopInfo():
     global _g_dw, _g_dh
@@ -718,6 +736,7 @@ class E2KodiExtServer(UDSServer):
 
     def handlePlayMessage(self, status, data):
         setaudio.switch(False,True)
+        setresolution.switch(False,True)
         if data is None:
             self.logger.error("handlePlayMessage: no data!")
             self.messageIn.put((False, None))
@@ -788,6 +807,7 @@ class E2KodiExtServer(UDSServer):
 
     def kodiPlayerExitCB(self, callback=None):
         setaudio.switch(True,True)
+        setresolution.switch(True,True)
         SESSION.nav.stopService()
         self.kodiPlayer = None
         self.subtitles = []
@@ -837,6 +857,8 @@ class KodiLauncher(Screen):
     def startKodi(self):
         setaudio.ReadData()
         setaudio.switch(True)
+        setresolution.ReadData()
+        setresolution.switch(True)
         self._startConsole = Console()
         self._startConsole.ePopen(KODIRUN_SCRIPT, kodiStopped)
 
@@ -846,13 +868,11 @@ class KodiLauncher(Screen):
 
     def stop(self):
         setaudio.switch()
+        setresolution.switch()
         FBUnlock()
         if self.previousService:
             self.session.nav.playService(self.previousService)
         try:
-            if getMachineBrand() in ('Vu+', 'Formuler'):
-                os.system('cat /tmp/video_outpout > /proc/stb/video/videomode')
-                os.system ('rm /tmp/video_outpout')
             if os.path.exists('/media/hdd/.kodi/'):
                 os.system ('rm -rf /media/hdd/kodi_crashlog*.log')
             else:
@@ -878,12 +898,6 @@ def autoStart(reason, **kwargs):
         SERVER_THREAD.join()
 
 def startLauncher(session, **kwargs):
-    try:
-        if getMachineBrand() in ('Vu+', 'Formuler'):
-            os.system('cat /proc/stb/video/videomode > /tmp/video_outpout')
-            os.system ('echo "720p50" > /proc/stb/video/videomode')
-    except:
-        pass
     RCUnlock()
     global SESSION
     SESSION = session
