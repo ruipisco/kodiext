@@ -858,7 +858,6 @@ class KodiLauncher(Screen):
         setaudio.ReadData()
         setaudio.switch(True)
         setresolution.ReadData()
-        setresolution.switch(True)
         self._startConsole = Console()
         self._startConsole.ePopen(KODIRUN_SCRIPT, kodiStopped)
 
@@ -873,6 +872,9 @@ class KodiLauncher(Screen):
         if self.previousService:
             self.session.nav.playService(self.previousService)
         try:
+            if getMachineBrand() in ('Vu+', 'Formuler'):
+                os.system('cat /tmp/video_outpout > /proc/stb/video/videomode')
+                os.system ('rm /tmp/video_outpout')
             if os.path.exists('/media/hdd/.kodi/'):
                 os.system ('rm -rf /media/hdd/kodi_crashlog*.log')
             else:
@@ -898,6 +900,12 @@ def autoStart(reason, **kwargs):
         SERVER_THREAD.join()
 
 def startLauncher(session, **kwargs):
+    try:
+        if getMachineBrand() in ('Vu+', 'Formuler'):
+            os.system('cat /proc/stb/video/videomode > /tmp/video_outpout')
+            os.system ('echo "720p50" > /proc/stb/video/videomode')
+    except:
+        pass
     RCUnlock()
     global SESSION
     SESSION = session
