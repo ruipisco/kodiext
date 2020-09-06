@@ -20,6 +20,9 @@ from Screens.Screen import Screen
 from Tools.Directories import fileExists
 from Tools import Notifications
 
+from Components.config import config
+from Components.AVSwitch import iAVSwitch
+
 from e2utils import InfoBarAspectChange, WebPixmap, MyAudioSelection, \
     StatusScreen, getPlayPositionInSeconds, getDurationInSeconds, \
     InfoBarSubservicesSupport
@@ -67,8 +70,8 @@ class SetAudio:
         self.volctrl = eDVBVolumecontrol.getInstance()
         self.ac3 = "downmix"
         self.dts = "downmix"
-        self.aac = "downmix"
-        self.aacplus = "downmix"
+        self.aac = "passthrough"
+        self.aacplus = "passthrough"
 
     def switch(self,Tokodi=False, Player=False):
         if Tokodi:
@@ -77,8 +80,8 @@ class SetAudio:
             vol =100
             ac3="downmix"
             dts="downmix"
-            aac="downmix"
-            aacplus="downmix"
+            aac="passthrough"
+            aacplus="passthrough"
         else:
             if Player:
                 vol = self.VolPlayer
@@ -145,19 +148,38 @@ class SetAudio:
 class SetResolution:
     def __init__(self):
         self.E2res = None
-        self.kodires = None
+        self.kodires = "720p"
+	self.kodirate = "50Hz"
+	self.port = config.av.videoport.value
+	self.rate = None
+	if getMachineBrand() in ('Vu+', 'Formuler'):
+		resolutions = ("720i","720p")
+	else:
+		resolutions = ("720i","720p","1080i","1080p")
+	rates = ("60Hz","50Hz")
+	try:
+		for res in resolutions:
+			for rate in rates:
+				if iAVSwitch.isModeAvailable(self.port, res, rate):
+					self.kodires = res
+					self.kodirate = rate
+	except:
+		pass
+
 
     def switch(self,Tokodi=False, Player=False):
         if Tokodi:
-            if self.kodires and Player:
-                open("/proc/stb/video/videomode","w").write(self.kodires)
+            if self.kodires and self.kodirate and self.port:
+                iAVSwitch.setMode(self.port, self.kodires, self.kodirate)
+                open("/proc/stb/video/videomode","w").write(self.kodires+self.kodirate.replace("Hz",""))
         else:
-            if Player:
-                self.kodires = open("/proc/stb/video/videomode","r").read()        
-            open("/proc/stb/video/videomode","w").write(self.E2res)
-
+            if self.E2res and self.rate and self.port:
+	    	iAVSwitch.setMode(self.port, self.E2res, self.rate)
+	
     def ReadData(self):
-        self.E2res = open("/proc/stb/video/videomode","r").read()        
+        self.E2res = config.av.videomode[self.port].value
+	self.rate = config.av.videorate[self.E2res].value
+	self.switch(True)
  
 setaudio = SetAudio()
 setresolution = SetResolution()
@@ -735,14 +757,15 @@ class E2KodiExtServer(UDSServer):
         self.messageIn.put((True, None))
 
     def handlePlayMessage(self, status, data):
-        setaudio.switch(False,True)
-        setresolution.switch(False,True)
         if data is None:
             self.logger.error("handlePlayMessage: no data!")
             self.messageIn.put((False, None))
             return
         FBUnlock(); RCUnlock()
 
+        setaudio.switch(False,True)
+        if getMachineBrand() not in ('Vu+', 'Formuler'):
+            setresolution.switch(False,True)
         # parse subtitles, play path and service type from data
         sType = 4097
         subtitles = []
@@ -807,7 +830,8 @@ class E2KodiExtServer(UDSServer):
 
     def kodiPlayerExitCB(self, callback=None):
         setaudio.switch(True,True)
-        setresolution.switch(True,True)
+        if getMachineBrand() not in ('Vu+', 'Formuler'):
+            setresolution.switch(True,True)
         SESSION.nav.stopService()
         self.kodiPlayer = None
         self.subtitles = []
@@ -855,9 +879,6 @@ class KodiLauncher(Screen):
         self._checkConsole.ePopen("ps | grep kodi.bin | grep -v grep", psCallback)
 
     def startKodi(self):
-        setaudio.ReadData()
-        setaudio.switch(True)
-        setresolution.ReadData()
         self._startConsole = Console()
         self._startConsole.ePopen(KODIRUN_SCRIPT, kodiStopped)
 
@@ -866,9 +887,9 @@ class KodiLauncher(Screen):
         self._resumeConsole.ePopen(KODIRESUME_SCRIPT % pid, kodiResumeStopped)
 
     def stop(self):
+        FBUnlock()
         setaudio.switch()
         setresolution.switch()
-        FBUnlock()
         if self.previousService:
             self.session.nav.playService(self.previousService)
         try:
@@ -897,6 +918,9 @@ def autoStart(reason, **kwargs):
         SERVER_THREAD.join()
 
 def startLauncher(session, **kwargs):
+    setaudio.ReadData()
+    setaudio.switch(True)
+    setresolution.ReadData()
     RCUnlock()
     global SESSION
     SESSION = session
