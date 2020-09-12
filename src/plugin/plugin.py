@@ -149,23 +149,22 @@ class SetResolution:
     def __init__(self):
         self.E2res = None
         self.kodires = "720p"
-	self.kodirate = "50Hz"
-	self.port = config.av.videoport.value
-	self.rate = None
-	if getMachineBrand() in ('Vu+', 'Formuler'):
-		resolutions = ("720i","720p")
-	else:
-		resolutions = ("720i","720p","1080i","1080p")
-	rates = ("60Hz","50Hz")
-	try:
-		for res in resolutions:
-			for rate in rates:
-				if iAVSwitch.isModeAvailable(self.port, res, rate):
-					self.kodires = res
-					self.kodirate = rate
-	except:
-		pass
-
+        self.kodirate = "50Hz"
+        self.port = config.av.videoport.value
+        self.rate = None
+        if getMachineBrand() in ('Vu+', 'Formuler'):
+            resolutions = ("720i","720p")
+        else:
+            resolutions = ("720i","720p","1080i","1080p")
+            rates = ("60Hz","50Hz")
+            for res in resolutions:
+                for rate in rates:
+                    try:
+                        if iAVSwitch.isModeAvailable(self.port, res, rate):
+                            self.kodires = res
+                            self.kodirate = rate
+                    except:
+                        pass
 
     def switch(self,Tokodi=False, Player=False):
         if Tokodi:
