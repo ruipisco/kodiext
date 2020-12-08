@@ -470,7 +470,7 @@ class KodiVideoPlayer(InfoBarBase, InfoBarShowHide, SubsSupportStatus, SubsSuppo
             self.__firstStart = False
             Notifications.AddNotificationWithID(self.RESUME_POPUP_ID,
                     MessageBox, _("Resuming playback"), timeout=0,
-                    type=MessageBox.TYPE_INFO, enable_input=False)
+                    type=MessageBox.TYPE_INFO, enable_input=True)
             self.__timer.start(500, True)
 
     def __seekToPosition(self):
