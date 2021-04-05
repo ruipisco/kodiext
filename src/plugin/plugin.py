@@ -1,8 +1,10 @@
 # -*- encoding: utf-8 -*-
-from Queue import Queue
+from __future__ import absolute_import
+from __future__ import print_function
 import json
 import os
 import threading
+import six
 
 from Components.ActionMap import ActionMap
 from Components.Label import Label
@@ -23,15 +25,19 @@ from Tools import Notifications
 from Components.config import config
 from Components.AVSwitch import iAVSwitch
 
-from e2utils import InfoBarAspectChange, WebPixmap, MyAudioSelection, \
+from .e2utils import InfoBarAspectChange, WebPixmap, MyAudioSelection, \
     StatusScreen, getPlayPositionInSeconds, getDurationInSeconds, \
     InfoBarSubservicesSupport
 from enigma import eServiceReference, eTimer, ePythonMessagePump, \
     iPlayableService, fbClass, eRCInput, getDesktop, eDVBVolumecontrol
 from Components.SystemInfo import SystemInfo
-from server import KodiExtRequestHandler, UDSServer
+from .server import KodiExtRequestHandler, UDSServer
 from Tools.BoundFunction import boundFunction
 from boxbranding import getMachineBrand
+
+from six.moves.queue import Queue
+
+
 try:
     from Plugins.Extensions.SubsSupport import SubsSupport, SubsSupportStatus
 except ImportError:
@@ -153,10 +159,10 @@ class SetResolution:
         self.port = config.av.videoport.value
         self.rate = None
         if getMachineBrand() in ('Vu+', 'Formuler'):
-            resolutions = ("720i","720p")
+            resolutions = ("720i", "720p")
         else:
-            resolutions = ("720i","720p","1080i","1080p")
-            rates = ("60Hz","50Hz")
+            resolutions = ("720i", "720p", "1080i", "1080p")
+            rates = ("60Hz", "50Hz")
             for res in resolutions:
                 for rate in rates:
                     try:
@@ -170,16 +176,16 @@ class SetResolution:
         if Tokodi:
             if self.kodires and self.kodirate and self.port:
                 iAVSwitch.setMode(self.port, self.kodires, self.kodirate)
-                open("/proc/stb/video/videomode","w").write(self.kodires+self.kodirate.replace("Hz",""))
+                open("/proc/stb/video/videomode", "w").write(self.kodires+self.kodirate.replace("Hz", ""))
         else:
             if self.E2res and self.rate and self.port:
-	    	iAVSwitch.setMode(self.port, self.E2res, self.rate)
-	
+                iAVSwitch.setMode(self.port, self.E2res, self.rate)
+
     def ReadData(self):
         self.E2res = config.av.videomode[self.port].value
-	self.rate = config.av.videorate[self.E2res].value
-	self.switch(True)
- 
+        self.rate = config.av.videorate[self.E2res].value
+        self.switch(True)
+
 setaudio = SetAudio()
 setresolution = SetResolution()
 
@@ -189,8 +195,8 @@ def SaveDesktopInfo():
         _g_dw = getDesktop(0).size().width()
         _g_dh = getDesktop(0).size().height()
     except:
-        _g_dw,_g_dh = 1280,720
-    print "[XBMC] Desktop size [%dx%d]" % (_g_dw,_g_dh)
+        _g_dw, _g_dh = 1280, 720
+    print("[XBMC] Desktop size [%dx%d]" % (_g_dw, _g_dh))
     if not fileExists('/tmp/dw.info'):
         os.system('touch /tmp/dw.info')
     os.system('chmod 755 /tmp/dw.info')
@@ -212,26 +218,26 @@ def fhd(num, factor=1.5):
     return int(round(prod))
 
 def FBLock():
-    print"[KodiLauncher] FBLock"
+    print("[KodiLauncher] FBLock")
     fbClass.getInstance().lock()
 
 def FBUnlock():
-    print "[KodiLauncher] FBUnlock"
+    print("[KodiLauncher] FBUnlock")
     fbClass.getInstance().unlock()
 
 def RCLock():
-    print "[KodiLauncher] RCLock"
+    print("[KodiLauncher] RCLock")
     eRCInput.getInstance().lock()
 
 def RCUnlock():
-    print "[KodiLauncher] RCUnlock"
+    print("[KodiLauncher] RCUnlock")
     eRCInput.getInstance().unlock()
 
 def kodiStopped(data, retval, extraArgs):
-    print '[KodiLauncher] kodi stopped: retval = %d' % retval
+    print('[KodiLauncher] kodi stopped: retval = %d' % retval)
 
 def kodiResumeStopped(data, retval, extraArgs):
-    print '[KodiLauncher] kodi resume script stopped: retval = %d' % retval
+    print('[KodiLauncher] kodi resume script stopped: retval = %d' % retval)
     if retval > 0:
         KODI_LAUNCHER.stop()
 #        <eLabel name="" position="1400,1020" size="445,45" text=" " font="RegularHD; 20"  backgroundColor="#001E1C1C"/>
@@ -240,125 +246,125 @@ class KodiVideoPlayer(InfoBarBase, InfoBarShowHide, SubsSupportStatus, SubsSuppo
     if esHD():
         skin = """
         <screen title="custom service source" position="0, 0" size="1921,1081" zPosition="1" flags="wfNoBorder" backgroundColor="transparent">
-	    <widget source="global.CurrentTime" render="Label" position="1700,34" size="150,67" font="RegularHD; 32" backgroundColor="#10000000" transparent="1" zPosition="3" halign="center">
-	      <convert type="ClockToText">Default</convert>
-	    </widget>
-	    <eLabel name="" position="0,15" size="1924,125" zPosition="-10"/>
-	    <eLabel position="0,856" zPosition="-11" size="1921,224" />
+            <widget source="global.CurrentTime" render="Label" position="1700,34" size="150,67" font="RegularHD; 32" backgroundColor="#10000000" transparent="1" zPosition="3" halign="center">
+              <convert type="ClockToText">Default</convert>
+            </widget>
+            <eLabel name="" position="0,15" size="1924,125" zPosition="-10"/>
+            <eLabel position="0,856" zPosition="-11" size="1921,224" />
             <widget name="image" position="30,780" size="300,300" alphatest="on" transparent="1"/>
             <widget source="session.CurrentService" render="Label" position="65,44" size="1845,38" zPosition="1"  font="RegularHD;24" valign="center" halign="left" foregroundColor="#00ffa533" transparent="1">
               <convert type="ServiceName">Name</convert>
             </widget>
-	    <widget name="genre" position="65,86" size="1845,35" zPosition="2" font="RegularHD;19" valign="center" halign="left"/>
-	    <eLabel name="progressbar-back" position="343,900" size="1500,4" backgroundColor="#00cccccc" />
-	    <widget source="session.CurrentService" render="Progress" foregroundColor="#00007eff" backgroundColor="#00ffffff" position="343,897" size="1500,10" zPosition="7" transparent="0">
-    		<convert type="ServicePosition">Position</convert>
-  	    </widget>
+            <widget name="genre" position="65,86" size="1845,35" zPosition="2" font="RegularHD;19" valign="center" halign="left"/>
+            <eLabel name="progressbar-back" position="343,900" size="1500,4" backgroundColor="#00cccccc" />
+            <widget source="session.CurrentService" render="Progress" foregroundColor="#00007eff" backgroundColor="#00ffffff" position="343,897" size="1500,10" zPosition="7" transparent="0">
+                <convert type="ServicePosition">Position</convert>
+            </widget>
             <widget source="session.CurrentService" render="Label" position="750,935" size="180,67" zPosition="6" font="RegularHD;32" halign="left"   transparent="1">
                 <convert type="ServicePosition">Position,ShowHours</convert>
             </widget>
-	    <eLabel name="" text="/" position="927,935" size="20,67" zPosition="6" font="RegularHD;32"/> 
+            <eLabel name="" text="/" position="927,935" size="20,67" zPosition="6" font="RegularHD;32"/>
             <widget source="session.CurrentService" render="Label" position="952,935" size="180,67" zPosition="6" font="RegularHD;32" halign="left"   transparent="1">
                 <convert type="ServicePosition">Length,ShowHours</convert>
             </widget>
-	    <ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/Kodi/image/audio.png" position="1343,942" size="40,40" scale="1" alphatest="blend" />
-		<ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/Kodi/image/subtitle.png" position="1343,1007" size="40,40" scale="1" alphatest="blend" />
-		<ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/Kodi/image/info.png" position="740,1020" size="40,40" scale="1" alphatest="blend" />
-		<ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/Kodi/image/timeslip.png" position="925,1020" size="40,40" scale="1" alphatest="blend" />
-	<eLabel name="" position="1130,940" size="200,45" transparent="1" text="Audio" halign="right" font="RegularHD; 20" />
+            <ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/Kodi/image/audio.png" position="1343,942" size="40,40" scale="1" alphatest="blend" />
+                <ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/Kodi/image/subtitle.png" position="1343,1007" size="40,40" scale="1" alphatest="blend" />
+                <ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/Kodi/image/info.png" position="740,1020" size="40,40" scale="1" alphatest="blend" />
+                <ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/Kodi/image/timeslip.png" position="925,1020" size="40,40" scale="1" alphatest="blend" />
+        <eLabel name="" position="1130,940" size="200,45" transparent="1" text="Audio" halign="right" font="RegularHD; 20" />
         <eLabel name="" position="1130,1005" size="200,45" transparent="1" text="Subtitle" halign="right" font="RegularHD; 20" />
         <eLabel name="" position="790,1022" size="270,45" transparent="1" text="Info" font="RegularHD; 20" />
         <eLabel name="" position="975,1022" size="233,45" transparent="1" text="TimeSleep" font="RegularHD; 20" />
-	<widget source="session.CurrentService" render="Label" position="1400,940" size="445,45" font="RegularHD; 20" backgroundColor="#001A1A1A">
-		<convert type="TrackInfo">Audio</convert>
-	</widget>
-	<widget source="session.CurrentService" render="Label" position="1400,1005" size="445,45" font="RegularHD; 20" backgroundColor="#001E1C1C">
-		<convert type="TrackInfo">Subtitle</convert>
-	</widget>
- 	<widget source="session.CurrentService" render="Label" position="345,1013" size="90,30" font="RegularHD; 16" halign="right" valign="center" transparent="1">
-    		<convert type="ServiceInfo">VideoWidth</convert>
-  	</widget>
-  	<eLabel text="x" position="435,1013" size="24,30" font="RegularHD; 16" halign="center" valign="center" transparent="1" />
-  	<widget source="session.CurrentService" render="Label" position="462,1013" size="90,30" font="RegularHD; 16" halign="left" valign="center" transparent="1">
-    		<convert type="ServiceInfo">VideoHeight</convert>
-  	</widget>
-	<widget pixmap="/usr/lib/enigma2/python/Plugins/Extensions/Kodi/image/sd-ico.png" position="400,952" render="Pixmap" size="80,60" source="session.CurrentService" zPosition="60" alphatest="blend" scale="1">
-    		<convert type="ServiceInfo">VideoWidth</convert>
-    		<convert type="ValueRange">0,720</convert>
-    		<convert type="ConditionalShowHide" />
-  	</widget>
-	<widget pixmap="/usr/lib/enigma2/python/Plugins/Extensions/Kodi/image/hd-ico.png" position="400,952" render="Pixmap" size="80,60" source="session.CurrentService" zPosition="60" alphatest="blend" scale="1">
-    		<convert type="ServiceInfo">VideoWidth</convert>
-    		<convert type="ValueRange">721,1980</convert>
-    		<convert type="ConditionalShowHide" />
-  	</widget>
-  	<widget pixmap="/usr/lib/enigma2/python/Plugins/Extensions/Kodi/image/4k-uhd-ico.png" position="400,952" render="Pixmap" size="80,60" source="session.CurrentService" zPosition="60" alphatest="blend" scale="1">
-    		<convert type="ServiceInfo">VideoWidth</convert>
-    		<convert type="ValueRange">1921,4096</convert>
-    		<convert type="ConditionalShowHide" />
-	</widget>
-	</screen>"""
+        <widget source="session.CurrentService" render="Label" position="1400,940" size="445,45" font="RegularHD; 20" backgroundColor="#001A1A1A">
+                <convert type="TrackInfo">Audio</convert>
+        </widget>
+        <widget source="session.CurrentService" render="Label" position="1400,1005" size="445,45" font="RegularHD; 20" backgroundColor="#001E1C1C">
+                <convert type="TrackInfo">Subtitle</convert>
+        </widget>
+        <widget source="session.CurrentService" render="Label" position="345,1013" size="90,30" font="RegularHD; 16" halign="right" valign="center" transparent="1">
+                <convert type="ServiceInfo">VideoWidth</convert>
+        </widget>
+        <eLabel text="x" position="435,1013" size="24,30" font="RegularHD; 16" halign="center" valign="center" transparent="1" />
+        <widget source="session.CurrentService" render="Label" position="462,1013" size="90,30" font="RegularHD; 16" halign="left" valign="center" transparent="1">
+                <convert type="ServiceInfo">VideoHeight</convert>
+        </widget>
+        <widget pixmap="/usr/lib/enigma2/python/Plugins/Extensions/Kodi/image/sd-ico.png" position="400,952" render="Pixmap" size="80,60" source="session.CurrentService" zPosition="60" alphatest="blend" scale="1">
+                <convert type="ServiceInfo">VideoWidth</convert>
+                <convert type="ValueRange">0,720</convert>
+                <convert type="ConditionalShowHide" />
+        </widget>
+        <widget pixmap="/usr/lib/enigma2/python/Plugins/Extensions/Kodi/image/hd-ico.png" position="400,952" render="Pixmap" size="80,60" source="session.CurrentService" zPosition="60" alphatest="blend" scale="1">
+                <convert type="ServiceInfo">VideoWidth</convert>
+                <convert type="ValueRange">721,1980</convert>
+                <convert type="ConditionalShowHide" />
+        </widget>
+        <widget pixmap="/usr/lib/enigma2/python/Plugins/Extensions/Kodi/image/4k-uhd-ico.png" position="400,952" render="Pixmap" size="80,60" source="session.CurrentService" zPosition="60" alphatest="blend" scale="1">
+                <convert type="ServiceInfo">VideoWidth</convert>
+                <convert type="ValueRange">1921,4096</convert>
+                <convert type="ConditionalShowHide" />
+        </widget>
+        </screen>"""
     else:
         skin = """
         <screen title="custom service source" position="0, 0" size="1280,720" zPosition="1" flags="wfNoBorder" backgroundColor="transparent">
-	    <widget source="global.CurrentTime" render="Label" position="1133,22" size="100,44" font="Regular; 32" backgroundColor="#10000000" transparent="1" zPosition="3" halign="center">
-	      <convert type="ClockToText">Default</convert>
-	    </widget>
-	    <eLabel name="" position="0,10" size="1282,83" zPosition="-10"/>
-	    <eLabel position="0,570" zPosition="-11" size="1280,149" />
+            <widget source="global.CurrentTime" render="Label" position="1133,22" size="100,44" font="Regular; 32" backgroundColor="#10000000" transparent="1" zPosition="3" halign="center">
+              <convert type="ClockToText">Default</convert>
+            </widget>
+            <eLabel name="" position="0,10" size="1282,83" zPosition="-10"/>
+            <eLabel position="0,570" zPosition="-11" size="1280,149" />
             <widget name="image" position="20,520" size="200,200" alphatest="on" transparent="1"/>
             <widget source="session.CurrentService" render="Label" position="43,29" size="1230,25" zPosition="1"  font="Regular;24" valign="center" halign="left" foregroundColor="#00ffa533" transparent="1">
               <convert type="ServiceName">Name</convert>
             </widget>
-	    <widget name="genre" position="43,57" size="1230,23" zPosition="2" font="Regular;19" valign="center" halign="left"/>
-	    <eLabel name="progressbar-back" position="228,600" size="1000,2" backgroundColor="#00cccccc" />
-	    <widget source="session.CurrentService" render="Progress" foregroundColor="#00007eff" backgroundColor="#00ffffff" position="228,598" size="1000,6" zPosition="7" transparent="0">
-    		<convert type="ServicePosition">Position</convert>
-  	    </widget>
+            <widget name="genre" position="43,57" size="1230,23" zPosition="2" font="Regular;19" valign="center" halign="left"/>
+            <eLabel name="progressbar-back" position="228,600" size="1000,2" backgroundColor="#00cccccc" />
+            <widget source="session.CurrentService" render="Progress" foregroundColor="#00007eff" backgroundColor="#00ffffff" position="228,598" size="1000,6" zPosition="7" transparent="0">
+                <convert type="ServicePosition">Position</convert>
+            </widget>
             <widget source="session.CurrentService" render="Label" position="500,623" size="120,44" zPosition="6" font="Regular;32" halign="left"   transparent="1">
                 <convert type="ServicePosition">Position,ShowHours</convert>
             </widget>
-	    <eLabel name="" text="/" position="618,623" size="13,44" zPosition="6" font="Regular;32"/> 
+            <eLabel name="" text="/" position="618,623" size="13,44" zPosition="6" font="Regular;32"/>
             <widget source="session.CurrentService" render="Label" position="634,623" size="120,44" zPosition="6" font="Regular;32" halign="left"   transparent="1">
                 <convert type="ServicePosition">Length,ShowHours</convert>
             </widget>
-	    <ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/Kodi/image/audio.png" position="895,628" size="27,27" scale="1" alphatest="blend" />
-		<ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/Kodi/image/subtitle.png" position="895,671" size="27,27" scale="1" alphatest="blend" />
-		<ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/Kodi/image/info.png" position="493,680" size="27,27" scale="1" alphatest="blend" />
-		<ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/Kodi/image/timeslip.png" position="617,680" size="27,27" scale="1" alphatest="blend" />
-	<eLabel name="" position="753,627" size="133,30" transparent="1" text="Audio" halign="right" font="Regular; 20" />
+            <ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/Kodi/image/audio.png" position="895,628" size="27,27" scale="1" alphatest="blend" />
+                <ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/Kodi/image/subtitle.png" position="895,671" size="27,27" scale="1" alphatest="blend" />
+                <ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/Kodi/image/info.png" position="493,680" size="27,27" scale="1" alphatest="blend" />
+                <ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/Kodi/image/timeslip.png" position="617,680" size="27,27" scale="1" alphatest="blend" />
+        <eLabel name="" position="753,627" size="133,30" transparent="1" text="Audio" halign="right" font="Regular; 20" />
         <eLabel name="" position="753,670" size="133,30" transparent="1" text="Subtitle" halign="right" font="Regular; 20" />
         <eLabel name="" position="527,681" size="180,30" transparent="1" text="Info" font="Regular; 20" />
         <eLabel name="" position="650,681" size="155,30" transparent="1" text="TimeSleep" font="Regular; 20" />
-	<widget source="session.CurrentService" render="Label" position="933,627" size="297,30" font="Regular; 20" backgroundColor="#001A1A1A">
-		<convert type="TrackInfo">Audio</convert>
-	</widget>
-	<widget source="session.CurrentService" render="Label" position="933,670" size="297,30" font="Regular; 20" backgroundColor="#001E1C1C">
-		<convert type="TrackInfo">Subtitle</convert>
-	</widget>
- 	<widget source="session.CurrentService" render="Label" position="230,675" size="60,20" font="Regular; 16" halign="right" valign="center" transparent="1">
-    		<convert type="ServiceInfo">VideoWidth</convert>
-  	</widget>
-  	<eLabel text="x" position="290,675" size="16,20" font="Regular; 16" halign="center" valign="center" transparent="1" />
-  	<widget source="session.CurrentService" render="Label" position="310,675" size="60,20" font="Regular; 16" halign="left" valign="center" transparent="1">
-    		<convert type="ServiceInfo">VideoHeight</convert>
-  	</widget>
-	<widget pixmap="/usr/lib/enigma2/python/Plugins/Extensions/Kodi/image/sd-ico.png" position="267,635" render="Pixmap" size="53,40" source="session.CurrentService" zPosition="60" alphatest="blend" scale="1">
-    		<convert type="ServiceInfo">VideoWidth</convert>
-    		<convert type="ValueRange">0,720</convert>
-    		<convert type="ConditionalShowHide" />
-  	</widget>
-	<widget pixmap="/usr/lib/enigma2/python/Plugins/Extensions/Kodi/image/hd-ico.png" position="267,635" render="Pixmap" size="53,40" source="session.CurrentService" zPosition="60" alphatest="blend" scale="1">
-    		<convert type="ServiceInfo">VideoWidth</convert>
-    		<convert type="ValueRange">721,1980</convert>
-    		<convert type="ConditionalShowHide" />
-  	</widget>
-  	<widget pixmap="/usr/lib/enigma2/python/Plugins/Extensions/Kodi/image/4k-uhd-ico.png" position="267,635" render="Pixmap" size="53,40" source="session.CurrentService" zPosition="60" alphatest="blend" scale="1">
-    		<convert type="ServiceInfo">VideoWidth</convert>
-    		<convert type="ValueRange">1921,4096</convert>
-    		<convert type="ConditionalShowHide" />
-	</widget>
-		</screen>"""
+        <widget source="session.CurrentService" render="Label" position="933,627" size="297,30" font="Regular; 20" backgroundColor="#001A1A1A">
+                <convert type="TrackInfo">Audio</convert>
+        </widget>
+        <widget source="session.CurrentService" render="Label" position="933,670" size="297,30" font="Regular; 20" backgroundColor="#001E1C1C">
+                <convert type="TrackInfo">Subtitle</convert>
+        </widget>
+        <widget source="session.CurrentService" render="Label" position="230,675" size="60,20" font="Regular; 16" halign="right" valign="center" transparent="1">
+                <convert type="ServiceInfo">VideoWidth</convert>
+        </widget>
+        <eLabel text="x" position="290,675" size="16,20" font="Regular; 16" halign="center" valign="center" transparent="1" />
+        <widget source="session.CurrentService" render="Label" position="310,675" size="60,20" font="Regular; 16" halign="left" valign="center" transparent="1">
+                <convert type="ServiceInfo">VideoHeight</convert>
+        </widget>
+        <widget pixmap="/usr/lib/enigma2/python/Plugins/Extensions/Kodi/image/sd-ico.png" position="267,635" render="Pixmap" size="53,40" source="session.CurrentService" zPosition="60" alphatest="blend" scale="1">
+                <convert type="ServiceInfo">VideoWidth</convert>
+                <convert type="ValueRange">0,720</convert>
+                <convert type="ConditionalShowHide" />
+        </widget>
+        <widget pixmap="/usr/lib/enigma2/python/Plugins/Extensions/Kodi/image/hd-ico.png" position="267,635" render="Pixmap" size="53,40" source="session.CurrentService" zPosition="60" alphatest="blend" scale="1">
+                <convert type="ServiceInfo">VideoWidth</convert>
+                <convert type="ValueRange">721,1980</convert>
+                <convert type="ConditionalShowHide" />
+        </widget>
+        <widget pixmap="/usr/lib/enigma2/python/Plugins/Extensions/Kodi/image/4k-uhd-ico.png" position="267,635" render="Pixmap" size="53,40" source="session.CurrentService" zPosition="60" alphatest="blend" scale="1">
+                <convert type="ServiceInfo">VideoWidth</convert>
+                <convert type="ValueRange">1921,4096</convert>
+                <convert type="ConditionalShowHide" />
+        </widget>
+                </screen>"""
 
     RESUME_POPUP_ID = "kodiplayer_seekto"
     instance = None
@@ -390,7 +396,7 @@ class KodiVideoPlayer(InfoBarBase, InfoBarShowHide, SubsSupportStatus, SubsSuppo
         self.__image = None
         self.__position = None
         self.__firstStart = True
-	self["genre"] = Label()
+        self["genre"] = Label()
 
         # load meta info from json file provided by Kodi Enigma2Player
         try:
@@ -398,13 +404,13 @@ class KodiVideoPlayer(InfoBarBase, InfoBarShowHide, SubsSupportStatus, SubsSuppo
         except Exception as e:
             self.logger.error("failed to load meta from %s: %s", KODIEXTIN, str(e))
             meta = {}
-	self.__image = Meta(meta).getImage()
+        self.__image = Meta(meta).getImage()
         self["image"] = WebPixmap(self.__image, caching=True)
 
-	self.genre = str(", ".join(Meta(meta).getGenre()))
-	self.plot = Meta(meta).getPlot()
+        self.genre = str(", ".join(Meta(meta).getGenre()))
+        self.plot = Meta(meta).getPlot()
 
-	self["genre"].setText(self.genre)
+        self["genre"].setText(self.genre)
 
         # set title, image if provided
         self.title_ref = Meta(meta).getTitle()
@@ -429,42 +435,46 @@ class KodiVideoPlayer(InfoBarBase, InfoBarShowHide, SubsSupportStatus, SubsSuppo
             "infoPressed": (infoCallback, _("Show playback info")),
             "nextPressed": (nextItemCallback, _("Skip to next item in playlist")),
             "prevPressed": (prevItemCallback, _("Skip to previous item in playlist")),
-	    "seekFwdManual": self.keyr,
-	    "seekBackManual": self.keyl
+            "seekFwdManual": self.keyr,
+            "seekBackManual": self.keyl
         })
 
         self.eventTracker = ServiceEventTracker(self,
         {
-            iPlayableService.evStart : self.__evStart,
+            iPlayableService.evStart: self.__evStart,
         })
 
-	assert KodiVideoPlayer.instance is None, "class KodiVideoPlayer is a singleton class and just one instance of this class is allowed!"
-	KodiVideoPlayer.instance = self
+        try:
+            if KodiVideoPlayer.instance:
+                 raise AssertionError("class KodiVideoPlayer is a singleton class and just one instance of this class is allowed!")
+        except:
+            pass
 
+        KodiVideoPlayer.instance = self
 
         self.onClose.append(boundFunction(self.session.deleteDialog, self.statusScreen))
         self.onClose.append(boundFunction(Notifications.RemovePopup, self.RESUME_POPUP_ID))
         self.onClose.append(self.__timer.stop)
 
     def keyr(self):
-	try:
-		if fileExists("/usr/lib/enigma2/python/Plugins/Extensions/TimeSleep/plugin.pyo") or fileExists("/usr/lib/enigma2/python/Plugins/Extensions/TimeSleep/plugin.so"):
-			from Plugins.Extensions.TimeSleep.plugin import timesleep
-			timesleep(self, True)
-		else:
-			InfoBarSeek.seekFwdManual(self)
-	except:
-		InfoBarSeek.seekFwdManual(self)
+        try:
+            if fileExists("/usr/lib/enigma2/python/Plugins/Extensions/TimeSleep/plugin.py") or fileExists("/usr/lib/enigma2/python/Plugins/Extensions/TimeSleep/plugin.so"):
+                from Plugins.Extensions.TimeSleep.plugin import timesleep
+                timesleep(self, True)
+            else:
+                InfoBarSeek.seekFwdManual(self)
+        except:
+            InfoBarSeek.seekFwdManual(self)
 
     def keyl(self):
-	try:
-		if fileExists("/usr/lib/enigma2/python/Plugins/Extensions/TimeSleep/plugin.pyo") or fileExists("/usr/lib/enigma2/python/Plugins/Extensions/TimeSleep/plugin.so"):
-			from Plugins.Extensions.TimeSleep.plugin import timesleep
-			timesleep(self, False)
-		else:
-			InfoBarSeek.seekBackManual(self)
-	except:
-		InfoBarSeek.seekBackManual(self)
+        try:
+            if fileExists("/usr/lib/enigma2/python/Plugins/Extensions/TimeSleep/plugin.py") or fileExists("/usr/lib/enigma2/python/Plugins/Extensions/TimeSleep/plugin.so"):
+                from Plugins.Extensions.TimeSleep.plugin import timesleep
+                timesleep(self, False)
+            else:
+                InfoBarSeek.seekBackManual(self)
+        except:
+            InfoBarSeek.seekBackManual(self)
     def __evStart(self):
         if self.__position and self.__firstStart:
             self.__firstStart = False
@@ -493,8 +503,8 @@ class KodiVideoPlayer(InfoBarBase, InfoBarShowHide, SubsSupportStatus, SubsSuppo
         self.session.nav.stopService()
 
     def playService(self, sref):
-	if self.title_ref:
-        	sref.setName(self.title_ref.encode('utf-8'))
+        if self.title_ref:
+            sref.setName(self.title_ref)
 
         self.session.nav.playService(sref)
 
@@ -532,7 +542,7 @@ class Meta(object):
                 except:
                     season = -1
                 if season > 0 and episode > 0:
-                    title += u" S%02dE%02d"%(season, episode) 
+                    title += u" S%02dE%02d"%(season, episode)
                 episodeTitle = vTag.get("title")
                 if episodeTitle:
                     title += u" - " + episodeTitle
@@ -543,17 +553,17 @@ class Meta(object):
                     title+= u" (" + str(year) + u")"
         if not title:
             title = self.meta.get("title")
-	filename = self.getFilename()
-	if not title and fileExists(str(filename) + ".spztxt"):
-		f=open(str(filename) + ".spztxt","r")
-		tok=0
-		for line in f.readlines():
-			idx=line.find("->")
-			if idx != -1:
-				if tok==0:
-					title=u''+line[idx+3:]
-					break
-		f.close()
+        filename = self.getFilename()
+        if not title and fileExists(str(filename) + ".spztxt"):
+            f=open(str(filename) + ".spztxt", "r")
+            tok=0
+            for line in f.readlines():
+                idx=line.find("->")
+                if idx != -1:
+                    if tok==0:
+                        title=u''+line[idx+3:]
+                        break
+            f.close()
         if not title:
             listItem = self.meta.get("listItem")
             if listItem:
@@ -568,122 +578,122 @@ class Meta(object):
         return startTime
 
     def getImage(self):
-	image = None
-	listItem = self.meta.get("listItem")
+        image = None
+        listItem = self.meta.get("listItem")
         if listItem:
-		image = listItem.get("CacheThumb","")
-		fanart = listItem.get("Fanart","")
-		imageweb = ""
-		if fanart:
-			imageweb = fanart.get("thumb","")
+            image = listItem.get("CacheThumb", "")
+            fanart = listItem.get("Fanart", "")
+            imageweb = ""
+            if fanart:
+                imageweb = fanart.get("thumb", "")
 
-		if imageweb.startswith("http"):
-			if not fileExists(image):
-				image = imageweb
-		else:
-			filename = self.getFilename()
-			if fileExists(str(filename) + ".png"):
-				image = str(filename) + ".png"
-			elif fileExists(str(filename) + ".gif"):
-				image = str(filename) + ".gif"
-			elif fileExists(str(filename) + ".jpg"):
-				image = str(filename) + ".jpg"
-	return image
+            if imageweb.startswith("http"):
+                if not fileExists(image):
+                    image = imageweb
+            else:
+                filename = self.getFilename()
+                if fileExists(str(filename) + ".png"):
+                    image = str(filename) + ".png"
+                elif fileExists(str(filename) + ".gif"):
+                    image = str(filename) + ".gif"
+                elif fileExists(str(filename) + ".jpg"):
+                    image = str(filename) + ".jpg"
+        return image
 
     def getFilename(self):
-	return self.meta.get("strPath")
+        return self.meta.get("strPath")
 
     def getPlot(self):
-	plot = u''
+        plot = u''
         vTag = self.meta.get('videoInfoTag')
         if vTag and vTag.get("plot"):
-		plot = u'' + vTag.get("plot")	
+            plot = u'' + vTag.get("plot")
 
-	filename = self.getFilename()
-	if not plot and fileExists(str(filename) + ".spztxt"):
-		f=open(str(filename) + ".spztxt","r")
-		tok=0
-		for line in f.readlines():
-			idx=line.find("->")
-			if idx != -1:
-				if tok==0:
-					tok=1
-				elif tok==1:
-					plot=u''+line[idx+3:]
-					break
-		f.close()
+        filename = self.getFilename()
+        if not plot and fileExists(str(filename) + ".spztxt"):
+            f=open(str(filename) + ".spztxt", "r")
+            tok=0
+            for line in f.readlines():
+                idx=line.find("->")
+                if idx != -1:
+                    if tok==0:
+                        tok=1
+                    elif tok==1:
+                        plot=u''+line[idx+3:]
+                        break
+            f.close()
 
-	return plot
+        return plot
 
     def getGenre(self):
-	genre = []
+        genre = []
         vTag = self.meta.get('videoInfoTag')
         if vTag and vTag.get("genre"):
-		genre = vTag.get("genre")
+            genre = vTag.get("genre")
 
-	filename = self.getFilename()
-	if not genre and fileExists(str(filename) + ".spztxt"):
-		f=open(str(filename) + ".spztxt","r")
-		for line in f.readlines():
-			if line.split(":")[0]=='Género':
-				genrestr=u''+line.split(":")[1][1:]
-				genre = genrestr.split(" | ")
-				break
-		f.close()
+        filename = self.getFilename()
+        if not genre and fileExists(str(filename) + ".spztxt"):
+            f=open(str(filename) + ".spztxt", "r")
+            for line in f.readlines():
+                if line.split(":")[0]=='Género':
+                    genrestr=u''+line.split(":")[1][1:]
+                    genre = genrestr.split(" | ")
+                    break
+            f.close()
 
-	return genre
+        return genre
 
 class VideoInfoView(Screen):
-	if esHD():
-		skin = """
-		<screen position="center,center" size="1150,600" title="View Video Info" >
-                   <widget name="image" position="15,150" size="300,400" alphatest="on" transparent="1"/>
-                   <widget source="session.CurrentService" render="Label" position="20,20" size="1110,42" zPosition="1"  font="RegularHD;26" valign="center" halign="left" foregroundColor="#00ffa533" transparent="1">
-                       <convert type="ServiceName">Name</convert>
-                   </widget>
-	           <widget name="genre" position="20,70" size="1110,35" zPosition="2" font="RegularHD;19" valign="center" halign="left"/>
-                   <eLabel name="linea" position="20,110" size="1110,2" foregroundColor="#40444444" transparent="0" zPosition="20" backgroundColor="#30555555"/>
-		   <widget source="description" position="330,150" size="800,400" font="RegularHD; 20" render="RunningTextSpa" options="movetype=swimming,startpoint=0,direction=top,steptime=100,repeat=0,always=0,oneshot=0,startdelay=15000,pause=500,backtime=5" noWrap="0"/>
-		</screen>"""
-	else:
-		skin="""
-		<screen position="center,center" size="766,400" title="View Video Info" >
-                   <widget name="image" position="10,100" size="200,266" alphatest="on" transparent="1"/>
-                   <widget source="session.CurrentService" render="Label" position="13,13" size="740,28" zPosition="1"  font="Regular;26" valign="center" halign="left" foregroundColor="#00ffa533" transparent="1">
-                       <convert type="ServiceName">Name</convert>
-                   </widget>
-	           <widget name="genre" position="13,46" size="740,23" zPosition="2" font="Regular;19" valign="center" halign="left"/>
-                   <eLabel name="linea" position="13,73" size="740,1" foregroundColor="#40444444" transparent="0" zPosition="20" backgroundColor="#30555555"/>
-		   <widget source="description" position="220,100" size="533,266" font="Regular; 20" render="RunningTextSpa" options="movetype=swimming,startpoint=0,direction=top,steptime=100,repeat=0,always=0,oneshot=0,startdelay=15000,pause=500,backtime=5" noWrap="0"/>
-		</screen>"""
-	
-	def __init__(self, session):
-		self.skin = VideoInfoView.skin
-		Screen.__init__(self, session)
-		
-		self["genre"] = Label()
-		self["description"]=Label()
-	        # load meta info from json file provided by Kodi Enigma2Player
-	        try:
-	            meta = json.load(open(KODIEXTIN, "r"))
-	        except Exception as e:
-	            self.logger.error("failed to load meta from %s: %s", KODIEXTIN, str(e))
-	            meta = {}
-		self.__image = Meta(meta).getImage()
-	        self["image"] = WebPixmap(self.__image, caching=True)
+    if esHD():
+        skin = """
+        <screen position="center,center" size="1150,600" title="View Video Info" >
+           <widget name="image" position="15,150" size="300,400" alphatest="on" transparent="1"/>
+           <widget source="session.CurrentService" render="Label" position="20,20" size="1110,42" zPosition="1"  font="RegularHD;26" valign="center" halign="left" foregroundColor="#00ffa533" transparent="1">
+               <convert type="ServiceName">Name</convert>
+           </widget>
+           <widget name="genre" position="20,70" size="1110,35" zPosition="2" font="RegularHD;19" valign="center" halign="left"/>
+           <eLabel name="linea" position="20,110" size="1110,2" foregroundColor="#40444444" transparent="0" zPosition="20" backgroundColor="#30555555"/>
+           <widget source="description" position="330,150" size="800,400" font="RegularHD; 20" render="RunningTextSpa" options="movetype=swimming,startpoint=0,direction=top,steptime=100,repeat=0,always=0,oneshot=0,startdelay=15000,pause=500,backtime=5" noWrap="0"/>
+        </screen>"""
+    else:
+        skin="""
+        <screen position="center,center" size="766,400" title="View Video Info" >
+           <widget name="image" position="10,100" size="200,266" alphatest="on" transparent="1"/>
+           <widget source="session.CurrentService" render="Label" position="13,13" size="740,28" zPosition="1"  font="Regular;26" valign="center" halign="left" foregroundColor="#00ffa533" transparent="1">
+               <convert type="ServiceName">Name</convert>
+           </widget>
+           <widget name="genre" position="13,46" size="740,23" zPosition="2" font="Regular;19" valign="center" halign="left"/>
+           <eLabel name="linea" position="13,73" size="740,1" foregroundColor="#40444444" transparent="0" zPosition="20" backgroundColor="#30555555"/>
+           <widget source="description" position="220,100" size="533,266" font="Regular; 20" render="RunningTextSpa" options="movetype=swimming,startpoint=0,direction=top,steptime=100,repeat=0,always=0,oneshot=0,startdelay=15000,pause=500,backtime=5" noWrap="0"/>
+        </screen>"""
 
-		self.genre = str(", ".join(Meta(meta).getGenre()))
-		self.plot = str(Meta(meta).getPlot())
+    def __init__(self, session):
+        self.skin = VideoInfoView.skin
+        Screen.__init__(self, session)
 
-		self["genre"].setText(self.genre)
-		self["description"].setText(self.plot)
+        self["genre"] = Label()
+        self["description"]=Label()
+        # load meta info from json file provided by Kodi Enigma2Player
+        try:
+            meta = json.load(open(KODIEXTIN, "r"))
+        except Exception as e:
+            self.logger.error("failed to load meta from %s: %s", KODIEXTIN, str(e))
+            meta = {}
+        self.__image = Meta(meta).getImage()
+        self["image"] = WebPixmap(self.__image, caching=True)
 
-		self["actions"] = ActionMap(["OkCancelActions"],
-		{
-			"cancel": self.close,
-			"ok": self.close
-		}, -1)
-		
+        self.genre = str(", ".join(Meta(meta).getGenre()))
+        self.plot = str(Meta(meta).getPlot())
+
+        self["genre"].setText(self.genre)
+        self["description"].setText(self.plot)
+
+        self["actions"] = ActionMap(["OkCancelActions"],
+        {
+                "cancel": self.close,
+                "ok": self.close
+        }, -1)
+
 
 class E2KodiExtRequestHandler(KodiExtRequestHandler):
 
@@ -762,12 +772,13 @@ class E2KodiExtServer(UDSServer):
             return
         FBUnlock(); RCUnlock()
 
-        setaudio.switch(False,True)
+        setaudio.switch(False, True)
         if getMachineBrand() not in ('Vu+', 'Formuler'):
-            setresolution.switch(False,True)
+            setresolution.switch(False, True)
         # parse subtitles, play path and service type from data
         sType = 4097
         subtitles = []
+        data = six.ensure_str(data)
         dataSplit = data.strip().split("\n")
         if len(dataSplit) == 1:
             playPath = dataSplit[0]
@@ -813,13 +824,13 @@ class E2KodiExtServer(UDSServer):
             self.kodiPlayer.loadSubs(subtitlesPath)
 
         # create service reference
-        sref = eServiceReference(sType, 0, playPath)
+        sref = eServiceReference(sType, 0, six.ensure_str(playPath))
 
         # set title, image if provided
         title = Meta(meta).getTitle()
         if not title:
             title = os.path.basename(playPath.split("#")[0])
-        sref.setName(title.encode('utf-8'))
+        sref.setName(six.ensure_str(title))
 
         # set start position if provided
         #self.kodiPlayer.setStartPosition(Meta(meta).getStartTime())
@@ -828,9 +839,9 @@ class E2KodiExtServer(UDSServer):
         self.messageIn.put((True, None))
 
     def kodiPlayerExitCB(self, callback=None):
-        setaudio.switch(True,True)
+        setaudio.switch(True, True)
         if getMachineBrand() not in ('Vu+', 'Formuler'):
-            setresolution.switch(True,True)
+            setresolution.switch(True, True)
         SESSION.nav.stopService()
         self.kodiPlayer = None
         self.subtitles = []
@@ -858,20 +869,20 @@ class KodiLauncher(Screen):
         def psCallback(data, retval, extraArgs):
             FBLock()
             kodiProc = None
-            procs = data.split('\n')
+            procs = data.split(b'\n')
             if len(procs) > 0:
                 for p in procs:
-                    if 'kodi.bin' in p:
+                    if b'kodi.bin' in p:
                         if kodiProc is not None:
-                            print '[KodiLauncher] startup - there are more kodi processes running!'
+                            print('[KodiLauncher] startup - there are more kodi processes running!')
                             return self.stop()
                         kodiProc = p.split()
             if kodiProc is not None:
                 kodiPid = int(kodiProc[0])
-                print "[KodiLauncher] startup: kodi is running, pid = %d , resuming..."% kodiPid
+                print("[KodiLauncher] startup: kodi is running, pid = %d , resuming..."% kodiPid)
                 self.resumeKodi(kodiPid)
             else:
-                print "[KodiLauncher] startup: kodi is not running, starting..."
+                print("[KodiLauncher] startup: kodi is not running, starting...")
                 self.startKodi()
 
         self._checkConsole = Console()
@@ -901,7 +912,7 @@ class KodiLauncher(Screen):
         self.close()
 
 def autoStart(reason, **kwargs):
-    print "[KodiLauncher] autoStart - reason = %d" % reason
+    print("[KodiLauncher] autoStart - reason = %d" % reason)
     global SERVER_THREAD
     global SERVER
     if reason == 0:
