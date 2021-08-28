@@ -21,7 +21,10 @@ from Tools.Directories import fileExists
 from Tools import Notifications
 
 from Components.config import config
-from Components.AVSwitch import iAVSwitch
+try:
+    from Components.AVSwitch import iAVSwitch
+except:
+    from Plugins.SystemPlugins.Videomode.VideoHardware import video_hw as iAVSwitch
 
 from e2utils import InfoBarAspectChange, WebPixmap, MyAudioSelection, \
     StatusScreen, getPlayPositionInSeconds, getDurationInSeconds, \
