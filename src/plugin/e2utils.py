@@ -253,7 +253,7 @@ class InfoBarAspectChange(object):
             self.defaultPolicy2 = None
         self.currentAVMode = self.V_MODES[0]
 
-        self["aspectChangeActions"] = HelpableActionMap(self, "InfoBarAspectChangeActions",
+        self["aspectChangeActions"] = HelpableActionMap(self, "KodiInfoBarAspectChangeActions",
             {
              "aspectChange":(self.toggleAspectRatio, _("Change aspect ratio"))
               }, -3)

@@ -424,7 +424,7 @@ class KodiVideoPlayer(InfoBarBase, InfoBarShowHide, SubsSupportStatus, SubsSuppo
             "upUp": (playlistCallback, _("Show playlist"))
         })
 
-        self["okCancelActions"] = HelpableActionMap(self, "OkCancelActions",
+        self["okCancelActions"] = HelpableActionMap(self, "KodiOkCancelActions",
         {
             "cancel": self.close
         })
@@ -488,7 +488,7 @@ class KodiVideoPlayer(InfoBarBase, InfoBarShowHide, SubsSupportStatus, SubsSuppo
             self.__timer.start(500, True)
         else:
             Notifications.RemovePopup(self.RESUME_POPUP_ID)
-            self.doSeek(long(self.__position))
+            self.doSeek(self.__position)
 
     def setImage(self, image):
         self.__image = image
