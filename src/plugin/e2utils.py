@@ -132,14 +132,12 @@ class WebPixmap(GUIComponent):
         if os.path.isfile(url):
             self.loadFromFile(url)
         elif url.startswith(b"http"):
-            tmpPath = os.path.join(self.cachedir, base64.encodestring(url))
+            tmpPath = os.path.join(self.cachedir, base64.b64encode(url).decode())
             if self.caching:
                 if os.path.isfile(tmpPath):
                     self.loadFromFile(tmpPath)
-                else:
-                    self.loadFromUrl(url, tmpPath)
-            else:
-                self.loadFromUrl(url, tmpPath)
+                    return
+            self.loadFromUrl(url, tmpPath)
         else:
             print('[WebPixmap] load - file not found or unsupported url: "%s"' % (str(url)))
 
