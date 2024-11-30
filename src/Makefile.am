@@ -1,1 +1,1 @@
-SUBDIRS = kodiext plugin
+SUBDIRS = plugin
