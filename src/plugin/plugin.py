@@ -4,9 +4,12 @@ from enigma import eTimer, fbClass, eRCInput, getDesktop, eDVBVolumecontrol
 
 from Components.AVSwitch import avSwitch
 from Components.config import config, ConfigSubsection, ConfigYesNo
+from Components.ActionMap import HelpableActionMap
 from Components.Console import Console
 from Components.PluginComponent import PluginDescriptor
+from Components.Sources.StaticText import StaticText
 from Components.SystemInfo import BoxInfo
+
 from Screens.Screen import Screen
 from Screens.Setup import Setup
 from Screens.Standby import QUIT_KODI, TryQuitMainloop
@@ -212,16 +215,26 @@ def startMenuLauncher(menuid, **kwargs):
 class KodiExtSetup(Setup):
 	def __init__(self, session):
 		Setup.__init__(self, session, "Kodi", plugin="Extensions/Kodi")
+		self["key_blue"] = StaticText(_("Format Disk"))
+		self["actions"] = HelpableActionMap(self, ["ColorActions"], {
+			"blue": (self.startKodi, _("Start Kodi"))
+		}, prio=-1, description=_("Kodi Actions"))
+
+	def startKodi(self):
+		self.close(True)
 
 
 def startSetup(session, **kwargs):
-	session.open(KodiExtSetup)
+	def kodiSetupCallback(result):
+		if result and result is True:
+			startLauncher(session)
+	session.openWithCallback(kodiSetupCallback, KodiExtSetup)
 
 
 def Plugins(**kwargs):
 	screenwidth = getDesktop(0).size().width()
 	kodiext = "kodiext_FHD.png" if screenwidth and screenwidth == 1920 else "kodiext_HD.png"
-	l = [PluginDescriptor("Kodi", PluginDescriptor.WHERE_PLUGINMENU, "Kodi Launcher", icon=kodiext, fnc=startSetup)]
+	l = [PluginDescriptor("Kodi", PluginDescriptor.WHERE_PLUGINMENU, "Kodi Settings", icon=kodiext, fnc=startSetup)]
 	if config.kodi.addToMainMenu.value:
 		l.append(PluginDescriptor(name="Kodi", where=PluginDescriptor.WHERE_MENU, fnc=startMenuLauncher))
 	if config.kodi.addToExtensionMenu.value:
