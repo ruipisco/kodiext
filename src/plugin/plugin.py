@@ -14,7 +14,7 @@ from Tools.Directories import fileWriteLine
 
 config.kodi = ConfigSubsection()
 config.kodi.addToMainMenu = ConfigYesNo(False)
-config.kodi.addToExtensionsMenu = ConfigYesNo(True)
+config.kodi.addToExtensionMenu = ConfigYesNo(True)
 config.kodi.standalone = ConfigYesNo(False)
 
 MACHINEBRAND = BoxInfo.getItem("displaybrand")
@@ -224,6 +224,6 @@ def Plugins(**kwargs):
 	l = [PluginDescriptor("Kodi", PluginDescriptor.WHERE_PLUGINMENU, "Kodi Launcher", icon=kodiext, fnc=startSetup)]
 	if config.kodi.addToMainMenu.value:
 		l.append(PluginDescriptor(name="Kodi", where=PluginDescriptor.WHERE_MENU, fnc=startMenuLauncher))
-	if config.kodi.addToExtensionsMenu.value:
+	if config.kodi.addToExtensionMenu.value:
 		l.append(PluginDescriptor(name="Kodi", where=PluginDescriptor.WHERE_EXTENSIONSMENU, icon=kodiext, fnc=startLauncher))
 	return l
