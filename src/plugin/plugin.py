@@ -215,7 +215,7 @@ def startMenuLauncher(menuid, **kwargs):
 class KodiExtSetup(Setup):
 	def __init__(self, session):
 		Setup.__init__(self, session, "Kodi", plugin="Extensions/Kodi")
-		self["key_blue"] = StaticText(_("Format Disk"))
+		self["key_blue"] = StaticText(_("Start Kodi"))
 		self["actions"] = HelpableActionMap(self, ["ColorActions"], {
 			"blue": (self.startKodi, _("Start Kodi"))
 		}, prio=-1, description=_("Kodi Actions"))
@@ -225,7 +225,7 @@ class KodiExtSetup(Setup):
 
 
 def startSetup(session, **kwargs):
-	def kodiSetupCallback(result):
+	def kodiSetupCallback(result=None):
 		if result and result is True:
 			startLauncher(session)
 	session.openWithCallback(kodiSetupCallback, KodiExtSetup)
