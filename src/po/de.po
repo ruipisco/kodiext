@@ -1,0 +1,105 @@
+# German translations for PACKAGE package
+# German translation for PACKAGE.
+# Copyright (C) 2025 THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# Automatically generated, 2025.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-01-05 12:06+0100\n"
+"PO-Revision-Date: 2025-01-05 12:06+0100\n"
+"Last-Translator: Automatically generated\n"
+"Language-Team: none\n"
+"Language: de\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+msgid "Add Kodi to Extensions Menu"
+msgstr "Kodi zum Erweiterungsmenü hinzufügen"
+
+msgid "Add Kodi to Main Menu"
+msgstr "Kodi zum Hauptmenü hinzufügen"
+
+msgid "Add Kodi to the Extensions Menu list of options."
+msgstr "Kodi zur Liste der Optionen im Erweiterungsmenü hinzufügen"
+
+msgid "Add Kodi to the Main Menu list of options."
+msgstr "Kodi zur Liste der Optionen im Hauptmenü hinzufügen."
+
+msgid "Aspect"
+msgstr "Aspekt"
+
+msgid "Average Input rate"
+msgstr "Durchschnittliche Eingaberate"
+
+msgid "Buffer Size"
+msgstr "Puffergröße"
+
+msgid "Buffering"
+msgstr "Pufferung"
+
+msgid "Change aspect ratio"
+msgstr "Seitenverhältnis ändern"
+
+msgid "Just scale"
+msgstr "Nur skalieren"
+
+msgid "Kodi Actions"
+msgstr "Kodi-Aktionen"
+
+msgid "Kodi Settings"
+msgstr "Kodi-Einstellungen"
+
+msgid "Letterbox"
+msgstr "Letterbox"
+
+msgid "Nonlinear"
+msgstr "Nichtlinear"
+
+msgid "Pan&scan"
+msgstr "Pan&scan"
+
+msgid "PillarBox"
+msgstr "PillarBox"
+
+msgid "Please select subservice..."
+msgstr "Bitte wählen Sie den Optionsdienst aus..."
+
+msgid "Policy"
+msgstr "Richtlinie"
+
+msgid "Resuming playback"
+msgstr "Wiedergabe wird fortgesetzt"
+
+msgid ""
+"Select 'Yes' to start Kodi standalone. Warning!! This will stop enigma "
+"including all functions."
+msgstr "Wählen Sie 'Ja', um Kodi im Standalone-Modus zu starten. Warnung!! Dies wird Enigma einschließlich aller Funktionen stoppen."
+
+msgid "Show playback info"
+msgstr "Wiedergabeinformationen anzeigen"
+
+msgid "Show playback menu"
+msgstr "Wiedergabemenü anzeigen"
+
+msgid "Show playlist"
+msgstr "Wiedergabeliste anzeigen"
+
+msgid "Show subservices"
+msgstr "Optionsdienste anzeigen"
+
+msgid "Skip to next item in playlist"
+msgstr "Zum nächsten Element in der Wiedergabeliste springen"
+
+msgid "Skip to previous item in playlist"
+msgstr "Zum vorherigen Element in der Wiedergabeliste springen"
+
+msgid "Start Kodi"
+msgstr "Kodi starten"
+
+msgid "Start Kodi Standalone"
+msgstr "Kodi im Standalone-Modus starten"

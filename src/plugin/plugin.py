@@ -1,49 +1,48 @@
-# -*- encoding: utf-8 -*-
-from __future__ import absolute_import
-from __future__ import print_function
 import json
-import os
+from os import chmod, remove, system
+from os.path import basename, exists
 import threading
-import six
+from queue import Queue
+
+from enigma import eTimer, fbClass, eRCInput, getDesktop, eDVBVolumecontrol
 
 from Components.ActionMap import ActionMap
 from Components.Label import Label
+from Components.AVSwitch import avSwitch
+from Components.config import config, ConfigSubsection, ConfigYesNo
 from Components.ActionMap import HelpableActionMap
 from Components.Console import Console
 from Components.PluginComponent import PluginDescriptor
+
 from Components.ServiceEventTracker import InfoBarBase
 from Components.ServiceEventTracker import ServiceEventTracker
-from Components.Pixmap import Pixmap
+from Components.Sources.StaticText import StaticText
+from Components.SystemInfo import BoxInfo
+
 from Screens.HelpMenu import HelpableScreen
-from Screens.InfoBarGenerics import InfoBarNotifications, InfoBarSeek, \
-    InfoBarAudioSelection, InfoBarShowHide, InfoBarSubtitleSupport
 from Screens.MessageBox import MessageBox
 from Screens.Screen import Screen
-from Tools.Directories import fileExists
-from Tools import Notifications
+from Screens.Setup import Setup
+from Screens.Standby import QUIT_KODI, TryQuitMainloop
 
-from Components.config import config
-from Components.AVSwitch import iAVSwitch
+from Screens.InfoBarGenerics import InfoBarNotifications, InfoBarSeek, InfoBarAudioSelection, InfoBarShowHide, InfoBarSubtitleSupport
+from Tools.BoundFunction import boundFunction
+from Tools.Directories import fileWriteLine
+from Tools import Notifications
 
 from .e2utils import InfoBarAspectChange, WebPixmap, MyAudioSelection, \
     StatusScreen, getPlayPositionInSeconds, getDurationInSeconds, \
     InfoBarSubservicesSupport
 from enigma import eServiceReference, eTimer, ePythonMessagePump, \
     iPlayableService, fbClass, eRCInput, getDesktop, eDVBVolumecontrol
-from Components.SystemInfo import SystemInfo
 from .server import KodiExtRequestHandler, UDSServer
-from Tools.BoundFunction import boundFunction
 
+config.kodi = ConfigSubsection()
+config.kodi.addToMainMenu = ConfigYesNo(False)
+config.kodi.addToExtensionMenu = ConfigYesNo(True)
+config.kodi.standalone = ConfigYesNo(False)
 
-try:
-    from Components.SystemInfo import BoxInfo
-    MACHINEBRAND = BoxInfo.getItem("displaybrand")
-except:
-    from boxbranding import getMachineBrand
-    MACHINEBRAND = getMachineBrand()
-
-from six.moves.queue import Queue
-
+MACHINEBRAND = BoxInfo.getItem("displaybrand")
 
 try:
     from Plugins.Extensions.SubsSupport import SubsSupport, SubsSupportStatus
@@ -62,12 +61,10 @@ OP_CODE_PLAY_STATUS,
 OP_CODE_PLAY_STOP,
 OP_CODE_SWITCH_TO_ENIGMA2,
 OP_CODE_SWITCH_TO_KODI) = range(6)
-
 KODIRUN_SCRIPT = "unset PYTHONPATH;kodi;kodiext -T"
 KODIRESUME_SCRIPT = "kodiext -P %s -K"
 KODIEXT_SOCKET = "/tmp/kodiext.socket"
 KODIEXTIN = "/tmp/kodiextin.json"
-
 KODI_LAUNCHER = None
 
 SESSION = None
@@ -108,52 +105,40 @@ class SetAudio:
 
         self.volctrl.setVolume(vol, vol)
 
-        if SystemInfo["CanDownmixAC3"]:
-            try:
-                open("/proc/stb/audio/ac3", "w").write(ac3)
-            except:
-                pass
+        if BoxInfo.getItem("CanDownmixAC3"):
+            fileWriteLine("/proc/stb/audio/ac3", ac3)
 
-        if SystemInfo["CanDownmixDTS"]:
-            try:
-                open("/proc/stb/audio/dts", "w").write(dts)
-            except:
-                pass
+        if BoxInfo.getItem("CanDownmixDTS"):
+            fileWriteLine("/proc/stb/audio/dts", dts)
 
-        if SystemInfo["CanDownmixAAC"]:
-            try:
-                open("/proc/stb/audio/aac", "w").write(aac)
-            except:
-                pass
+        if BoxInfo.getItem("CanDownmixAAC"):
+            fileWriteLine("/proc/stb/audio/aac", aac)
 
-        if SystemInfo["CanDownmixAACPlus"]:
-            try:
-                open("/proc/stb/audio/aacplus", "w").write(aacplus)
-            except:
-                pass
+        if BoxInfo.getItem("CanDownmixAACPlus"):
+            fileWriteLine("/proc/stb/audio/aacplus", aacplus)
 
     def ReadData(self):
         self.VolPrev = self.volctrl.getVolume()
         self.VolPlayer = self.VolPrev
-        if SystemInfo["CanDownmixAC3"]:
+        if BoxInfo.getItem("CanDownmixAC3"):
             try:
                 self.ac3 = open("/proc/stb/audio/ac3", "r").read()
             except:
                 pass
 
-        if SystemInfo["CanDownmixDTS"]:
+        if BoxInfo.getItem("CanDownmixDTS"):
             try:
                 self.dts = open("/proc/stb/audio/dts", "r").read()
             except:
                 pass
 
-        if SystemInfo["CanDownmixAAC"]:
+        if BoxInfo.getItem("CanDownmixAAC"):
             try:
                 self.aac = open("/proc/stb/audio/aac", "r").read()
             except:
                 pass
 
-        if SystemInfo["CanDownmixAACPlus"]:
+        if BoxInfo.getItem("CanDownmixAACPlus"):
             try:
                 self.aacplus = open("/proc/stb/audio/aacplus", "r").read()
             except:
@@ -167,7 +152,7 @@ class SetResolution:
         self.kodirate = "50Hz"
         self.port = config.av.videoport.value
         self.rate = None
-        if MACHINEBRAND in ('Vu+', 'Formuler'):
+        if MACHINEBRAND in ("Vu+", "Formuler"):
             resolutions = ("720i", "720p")
         else:
             resolutions = ("720i", "720p", "1080i", "1080p")
@@ -175,20 +160,20 @@ class SetResolution:
             for res in resolutions:
                 for rate in rates:
                     try:
-                        if iAVSwitch.isModeAvailable(self.port, res, rate):
+                        if avSwitch.isModeAvailable(self.port, res, rate):
                             self.kodires = res
                             self.kodirate = rate
-                    except:
+                    except Exception:
                         pass
 
     def switch(self, Tokodi=False, Player=False):
         if Tokodi:
             if self.kodires and self.kodirate and self.port:
-                iAVSwitch.setMode(self.port, self.kodires, self.kodirate)
+                avSwitch.setMode(self.port, self.kodires, self.kodirate)
                 open("/proc/stb/video/videomode", "w").write(self.kodires + self.kodirate.replace("Hz", ""))
         else:
             if self.E2res and self.rate and self.port:
-                iAVSwitch.setMode(self.port, self.E2res, self.rate)
+                avSwitch.setMode(self.port, self.E2res, self.rate)
 
     def ReadData(self):
         self.E2res = config.av.videomode[self.port].value
@@ -201,17 +186,15 @@ setresolution = SetResolution()
 
 
 def SaveDesktopInfo():
-    global _g_dw, _g_dh
-    try:
-        _g_dw = getDesktop(0).size().width()
-        _g_dh = getDesktop(0).size().height()
-    except:
-        _g_dw, _g_dh = 1280, 720
-    print("[XBMC] Desktop size [%dx%d]" % (_g_dw, _g_dh))
-    if not fileExists('/tmp/dw.info'):
-        os.system('touch /tmp/dw.info')
-    os.system('chmod 755 /tmp/dw.info')
-    open("/tmp/dw.info", "w").write(str(_g_dw) + "x" + str(_g_dh))
+	global _g_dw, _g_dh
+	try:
+		_g_dw = getDesktop(0).size().width()
+		_g_dh = getDesktop(0).size().height()
+	except Exception:
+		_g_dw, _g_dh = 1280, 720
+	print(f"[XBMC] Desktop size [{_g_dw}x{_g_dh}]")
+	fileWriteLine("/tmp/dw.info", f"{_g_dw}x{_g_dh}")
+	chmod("/tmp/dw.info", 0o755)
 
 
 SaveDesktopInfo()
@@ -253,14 +236,14 @@ def RCUnlock():
 
 
 def kodiStopped(data, retval, extraArgs):
-    print('[KodiLauncher] kodi stopped: retval = %d' % retval)
+	print(f"[KodiLauncher] kodi stopped: retval = {retval}")
+	#KODI_LAUNCHER.stop()
 
 
 def kodiResumeStopped(data, retval, extraArgs):
     print('[KodiLauncher] kodi resume script stopped: retval = %d' % retval)
     if retval > 0:
         KODI_LAUNCHER.stop()
-#        <eLabel name="" position="1400,1020" size="445,45" text=" " font="RegularHD; 20"  backgroundColor="#001E1C1C"/>
 
 
 class KodiVideoPlayer(InfoBarBase, InfoBarShowHide, SubsSupportStatus, SubsSupport, InfoBarSeek, InfoBarSubservicesSupport, InfoBarAspectChange, InfoBarAudioSelection, InfoBarNotifications, HelpableScreen, Screen):
@@ -479,7 +462,7 @@ class KodiVideoPlayer(InfoBarBase, InfoBarShowHide, SubsSupportStatus, SubsSuppo
 
     def keyr(self):
         try:
-            if fileExists("/usr/lib/enigma2/python/Plugins/Extensions/TimeSleep/plugin.py") or fileExists("/usr/lib/enigma2/python/Plugins/Extensions/TimeSleep/plugin.so"):
+            if exists("/usr/lib/enigma2/python/Plugins/Extensions/TimeSleep/plugin.py") or exists("/usr/lib/enigma2/python/Plugins/Extensions/TimeSleep/plugin.so"):
                 from Plugins.Extensions.TimeSleep.plugin import timesleep
                 timesleep(self, True)
             else:
@@ -489,7 +472,7 @@ class KodiVideoPlayer(InfoBarBase, InfoBarShowHide, SubsSupportStatus, SubsSuppo
 
     def keyl(self):
         try:
-            if fileExists("/usr/lib/enigma2/python/Plugins/Extensions/TimeSleep/plugin.py") or fileExists("/usr/lib/enigma2/python/Plugins/Extensions/TimeSleep/plugin.so"):
+            if exists("/usr/lib/enigma2/python/Plugins/Extensions/TimeSleep/plugin.py") or exists("/usr/lib/enigma2/python/Plugins/Extensions/TimeSleep/plugin.so"):
                 from Plugins.Extensions.TimeSleep.plugin import timesleep
                 timesleep(self, False)
             else:
@@ -577,7 +560,7 @@ class Meta(object):
         if not title:
             title = self.meta.get("title")
         filename = self.getFilename()
-        if not title and fileExists(str(filename) + ".spztxt"):
+        if not title and exists(str(filename) + ".spztxt"):
             f = open(str(filename) + ".spztxt", "r")
             tok = 0
             for line in f.readlines():
@@ -611,15 +594,15 @@ class Meta(object):
                 imageweb = fanart.get("thumb", "")
 
             if imageweb.startswith("http"):
-                if not fileExists(image):
+                if not exists(image):
                     image = imageweb
             else:
                 filename = self.getFilename()
-                if fileExists(str(filename) + ".png"):
+                if exists(str(filename) + ".png"):
                     image = str(filename) + ".png"
-                elif fileExists(str(filename) + ".gif"):
+                elif exists(str(filename) + ".gif"):
                     image = str(filename) + ".gif"
-                elif fileExists(str(filename) + ".jpg"):
+                elif exists(str(filename) + ".jpg"):
                     image = str(filename) + ".jpg"
         return image
 
@@ -633,7 +616,7 @@ class Meta(object):
             plot = u'' + vTag.get("plot")
 
         filename = self.getFilename()
-        if not plot and fileExists(str(filename) + ".spztxt"):
+        if not plot and exists(str(filename) + ".spztxt"):
             f = open(str(filename) + ".spztxt", "r")
             tok = 0
             for line in f.readlines():
@@ -655,7 +638,7 @@ class Meta(object):
             genre = vTag.get("genre")
 
         filename = self.getFilename()
-        if not genre and fileExists(str(filename) + ".spztxt"):
+        if not genre and exists(str(filename) + ".spztxt"):
             f = open(str(filename) + ".spztxt", "r")
             for line in f.readlines():
                 if line.split(":")[0] == 'Género':
@@ -804,7 +787,6 @@ class E2KodiExtServer(UDSServer):
         # parse subtitles, play path and service type from data
         sType = 4097
         subtitles = []
-        data = six.ensure_str(data)
         dataSplit = data.strip().split("\n")
         if len(dataSplit) == 1:
             playPath = dataSplit[0]
@@ -850,13 +832,13 @@ class E2KodiExtServer(UDSServer):
             self.kodiPlayer.loadSubs(subtitlesPath)
 
         # create service reference
-        sref = eServiceReference(sType, 0, six.ensure_str(playPath))
+        sref = eServiceReference(sType, 0, playPath)
 
         # set title, image if provided
         title = Meta(meta).getTitle()
         if not title:
-            title = os.path.basename(playPath.split("#")[0])
-        sref.setName(six.ensure_str(title))
+            title = basename(playPath.split("#")[0])
+        sref.setName(title)
 
         # set start position if provided
         #self.kodiPlayer.setStartPosition(Meta(meta).getStartTime())
@@ -877,10 +859,7 @@ class E2KodiExtServer(UDSServer):
 
 
 class KodiLauncher(Screen):
-    if esHD():
-        skin = """<screen position="fill" size="1920,1080" backgroundColor="#FF000000" flags="wfNoBorder" title=" "></screen>"""
-    else:
-        skin = """<screen position="fill" size="1280,720" backgroundColor="#FF000000" flags="wfNoBorder" title=" "></screen>"""
+    skin = """<screen position="fill" backgroundColor="#FF000000" flags="wfNoBorder" title=" "></screen>"""
 
     def __init__(self, session):
         Screen.__init__(self, session)
@@ -898,12 +877,12 @@ class KodiLauncher(Screen):
             kodiProc = None
             if isinstance(data, bytes):
                 data = data.decode()
-            procs = data.split('\n')
+            procs = data.split("\n")
             if len(procs) > 0:
                 for p in procs:
-                    if 'kodi.bin' in p:
+                    if "kodi.bin" in p:
                         if kodiProc is not None:
-                            print('[KodiLauncher] startup - there are more kodi processes running!')
+                            print("[KodiLauncher] startup - there are more kodi processes running!")
                             return self.stop()
                         kodiProc = p.split()
             if kodiProc is not None:
@@ -932,11 +911,11 @@ class KodiLauncher(Screen):
         if self.previousService:
             self.session.nav.playService(self.previousService)
         try:
-            if os.path.exists('/media/hdd/.kodi/'):
-                os.system('rm -rf /media/hdd/kodi_crashlog*.log')
+            if exists("/media/hdd/.kodi/"):
+                system("rm -rf /media/hdd/kodi_crashlog*.log")
             else:
-                os.system('rm -rf /tmp/kodi/kodi_crashlog*.log')
-        except:
+                system("rm -rf /tmp/kodi/kodi_crashlog*.log")
+        except OSError:
             pass
         self.close()
 
@@ -947,7 +926,7 @@ def autoStart(reason, **kwargs):
     global SERVER
     if reason == 0:
         try:
-            os.remove(KODIEXT_SOCKET)
+            remove(KODIEXT_SOCKET)
         except OSError:
             pass
         SERVER = E2KodiExtServer()
@@ -959,24 +938,53 @@ def autoStart(reason, **kwargs):
 
 
 def startLauncher(session, **kwargs):
-    setaudio.ReadData()
-    setaudio.switch(True)
-    setresolution.ReadData()
-    RCUnlock()
-    global SESSION
-    SESSION = session
-    global KODI_LAUNCHER
-    KODI_LAUNCHER = session.open(KodiLauncher)
+	if config.kodi.standalone.value:
+		session.open(TryQuitMainloop, retvalue=QUIT_KODI)
+	else:
+		setaudio.ReadData()
+		# setaudio.switch(True)
+		setresolution.ReadData()
+		eRCInput.getInstance().unlock()
+		global SESSION
+		SESSION = session
+		global KODI_LAUNCHER
+		KODI_LAUNCHER = session.open(KodiLauncher)
+
+
+def startMenuLauncher(menuid, **kwargs):
+	if menuid == "mainmenu":
+		return [("Kodi", startLauncher, "kodi", 1)]
+	return []
+
+
+class KodiExtSetup(Setup):
+	def __init__(self, session):
+		Setup.__init__(self, session, "Kodi", plugin="Extensions/Kodi")
+		self["key_blue"] = StaticText(_("Start Kodi"))
+		self["actions"] = HelpableActionMap(self, ["ColorActions"], {
+			"blue": (self.startKodi, _("Start Kodi"))
+		}, prio=-1, description=_("Kodi Actions"))
+
+	def startKodi(self):
+		self.close(True)
+
+
+def startSetup(session, **kwargs):
+	def kodiSetupCallback(result=None):
+		if result and result is True:
+			startLauncher(session)
+	session.openWithCallback(kodiSetupCallback, KodiExtSetup)
 
 
 def Plugins(**kwargs):
-    screenwidth = getDesktop(0).size().width()
-    if screenwidth and screenwidth == 1920:
-        kodiext = 'kodiext_FHD.png'
-    else:
-        kodiext = 'kodiext_HD.png'
-
-    return [
-            PluginDescriptor("Kodi", PluginDescriptor.WHERE_AUTOSTART, "Kodi Launcher", fnc=autoStart),
-            PluginDescriptor("Kodi", PluginDescriptor.WHERE_EXTENSIONSMENU, "Kodi Launcher", fnc=startLauncher),
-            PluginDescriptor("Kodi", PluginDescriptor.WHERE_PLUGINMENU, "Kodi Launcher", icon=kodiext, fnc=startLauncher)]
+	screenwidth = getDesktop(0).size().width()
+	kodiext = "kodiext_FHD.png" if screenwidth and screenwidth == 1920 else "kodiext_HD.png"
+	l = [
+        PluginDescriptor("Kodi", PluginDescriptor.WHERE_AUTOSTART, "Kodi Launcher", fnc=autoStart),
+        PluginDescriptor("Kodi", PluginDescriptor.WHERE_PLUGINMENU, "Kodi Settings", icon=kodiext, fnc=startSetup)
+      ]
+	if config.kodi.addToMainMenu.value:
+		l.append(PluginDescriptor(name="Kodi", where=PluginDescriptor.WHERE_MENU, fnc=startMenuLauncher))
+	if config.kodi.addToExtensionMenu.value:
+		l.append(PluginDescriptor(name="Kodi", where=PluginDescriptor.WHERE_EXTENSIONSMENU, icon=kodiext, fnc=startLauncher))
+	return l

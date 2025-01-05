@@ -1,0 +1,7 @@
+<setupxml>
+	<setup key="Kodi" title="Kodi Settings" allowDefault="1">
+		<item level="0" text="Add Kodi to Main Menu" description="Add Kodi to the Main Menu list of options.">config.kodi.addToMainMenu</item>
+		<item level="0" text="Add Kodi to Extensions Menu" description="Add Kodi to the Extensions Menu list of options.">config.kodi.addToExtensionMenu</item>
+		<item level="0" text="Start Kodi Standalone" description="Select 'Yes' to start Kodi standalone. Warning!! This will stop enigma including all functions.">config.kodi.standalone</item>
+	</setup>
+</setupxml>
