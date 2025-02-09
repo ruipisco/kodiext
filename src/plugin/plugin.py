@@ -787,6 +787,8 @@ class E2KodiExtServer(UDSServer):
         # parse subtitles, play path and service type from data
         sType = 4097
         subtitles = []
+        if isinstance(data, bytes):
+            data = data.decode()
         dataSplit = data.strip().split("\n")
         if len(dataSplit) == 1:
             playPath = dataSplit[0]
