@@ -134,7 +134,7 @@ class SetAudio:
             vol = self.VolPlayer if Player else self.VolPrev  # Restore correct volume level
             ac3, dts, aac, aacplus = self.ac3, self.dts, self.aac, self.aacplus
 
-        self.volctrl.setVolume(vol, vol)  # Set the volume at
+        self.volctrl.setVolume(vol, vol)  # Set the volume
         self._apply_audio_settings(ac3, dts, aac, aacplus)
 
     def ReadData(self):
@@ -180,10 +180,10 @@ class SetResolution:
         self.port = config.av.videoport.value
         self.rate = None
         if MACHINEBRAND in ("Vu+", "Formuler"):
-            resolutions = ("720i", "720p", "1080i", "1080p", "2160p")
+            resolutions = ("720i", "720p", "1080i", "1080p", "2160p", "2160p30")
         else:
-            resolutions = ("720i", "720p", "1080i", "1080p", "2160p")
-            rates = ("60Hz", "50Hz", "24Hz")
+            resolutions = ("720i", "720p", "1080i", "1080p", "2160p", "2160p30")
+            rates = ("24Hz", "30Hz", "50Hz", "60Hz")
             for res in resolutions:
                 for rate in rates:
                     try:
@@ -239,21 +239,21 @@ def SaveDesktopInfo():
 SaveDesktopInfo()
 
 def esFHD():
-    # Verifica se a largura da tela é 1280x720 ou 1920x1080
+    # Verify screen width is equal to 1920 (FHD)
     return _d_dw == 1920
 
 def esUHD():
-    # Verifica se a largura da tela é maior ou igual a 3840 (UHD/4K)
+    # Verify screen width is equal or bigger then 3840 (UHD/4K)
     return _d_dw >= 3840
 
 def fhd(num, factor=1.5, uhd_factor=2.0):
-    # Ajusta o valor com base na resolução
+    # Ajusts the factor value based on resolution
     if esUHD():
-        prod = num * uhd_factor  # Aplica fator UHD (4K)
+        prod = num * uhd_factor  # Aplies UHD (4K) factor
     elif esFHD():
-        prod = num * factor  # Aplica fator HD
+        prod = num * factor  # Aplies FHD factor
     else:
-        prod = num  # Mantém o valor original para resoluções menores
+        prod = num  # Keeps the original value for smaller resolutions
     return int(round(prod))
 
 def FBLock():
