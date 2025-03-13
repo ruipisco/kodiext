@@ -18,7 +18,6 @@ import six
 from skin import parseColor
 from enigma import iPlayableService, ePicLoad, ePixmap, eTimer, getDesktop
 
-
 def toString(text):
     if text is None:
         return None
@@ -28,14 +27,21 @@ def toString(text):
         return text
     return str(text)
 
+# Get values of proprotions for SD, HD, FHD and 4K resolutions
 def getAspect():
     val = AVSwitch().getAspectRatioSetting()
-    if val == 0 or val == 1:
-        r = (5 * 576, 4 * 720)
-    elif val == 2 or val == 3 or val == 6:
-        r = (16 * 720, 9 * 1280)
-    elif val == 4 or val == 5:
-        r = (16 * 576, 10 * 720)
+
+    if val == 0:  # 4:3 aspect ratio (576i)
+        r = (720 * 4, 576 * 5)  # Standard 576i resolution (PAL)
+    elif val == 1:  # 16:9 aspect ratio (576i)
+        r = (1024 * 4, 576 * 5)  # 16:9 scaled resolution for 576i
+    elif val == 2 or val == 3 or val == 6:  # 16:9 aspect ratio (4K)
+        r = (3840 * 9, 2160 * 16)  # Standard 4K resolution (16:9)
+    elif val == 4 or val == 5:  # 16:10 aspect ratio (custom)
+        r = (1280 * 10, 720 * 16)  # 720p resolution (16:9, closest to 16:10)
+    else:
+        r = (1920 * 9, 1080 * 16)  # Default to 1080p (16:9)
+
     return r
 
 def getPlayPositionPts(session):
@@ -148,7 +154,6 @@ class WebPixmap(GUIComponent):
             del self.__currentUrl
             self.instance.setPixmap(ptr.__deref__())
 
-
 class BufferIndicatorDetailed(Screen):
     def __init__(self, session, updateIntervalInMs=500):
         desktopWidth = getDesktop(0).size().width()
@@ -202,7 +207,6 @@ class BufferIndicatorDetailed(Screen):
                 else:
                     self["avgInRate"].text = "%s: %dKB" % (_("Average Input rate"), avgInRate / 1024)
 
-
 class InfoBarBuffer(object):
     def __init__(self):
         self.bufferScreen = self.session.instantiateDialog(BufferIndicatorDetailed)
@@ -233,7 +237,6 @@ class InfoBarAspectChange(object):
         '4_3_letterbox', '4_3_panscan', '4_3_bestfit'
     ]
 
-
     def __init__(self):
         self.postAspectChange = []
         self.aspectChanged = False
@@ -251,7 +254,7 @@ class InfoBarAspectChange(object):
             self.defaultPolicy2 = None
         self.currentAVMode = self.V_MODES[0]
 
-        self["aspectChangeActions"] = HelpableActionMap(self, "KodiInfoBarAspectChangeActions",
+        self["aspectChangeActions"] = HelpableActionMap(self, "InfoBarAspectChangeActions",
             {
              "aspectChange":(self.toggleAspectRatio, _("Change aspect ratio"))
               }, -3)
@@ -302,7 +305,6 @@ class InfoBarAspectChange(object):
         if self.aspectChanged:
             self.setAspect(self.defaultAspect, self.defaultPolicy, self.defaultPolicy2)
 
-
 class MyAudioSelection(AudioSelection):
     def __init__(self, session, infobar=None, page='audio'):
         try:
@@ -311,10 +313,6 @@ class MyAudioSelection(AudioSelection):
             # really old AudioSelection
             AudioSelection.__init__(self, session)
         self.skinName = 'AudioSelection'
-
-#    def getSubtitleList(self):
-#        return []
-
 
 class StatusScreen(Screen):
     def __init__(self, session):
