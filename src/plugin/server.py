@@ -41,7 +41,6 @@ class KodiExtRequestHandler(socketserver.BaseRequestHandler):
     def handle_request(self, opcode, status, data):
         return True, None
 
-
 class UDSServer(socketserver.UnixStreamServer):
 
     def __init__(self, server_address, handler_class=KodiExtRequestHandler):
